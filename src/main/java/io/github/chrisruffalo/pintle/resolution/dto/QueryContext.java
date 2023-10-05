@@ -13,12 +13,17 @@ public class QueryContext {
 
     private final Responder responder;
 
-
     private Message question;
 
     private Message answer;
 
     private final List<Throwable> exceptions = new LinkedList<>();
+
+    /**
+     * When true sets that the source was a cached entry. Cached entries
+     * should not re-update the cache.
+     */
+    private boolean cached;
 
     public QueryContext(Responder responder, Message question) {
         this.responder = responder;
@@ -48,5 +53,13 @@ public class QueryContext {
 
     public List<Throwable> getExceptions() {
         return exceptions;
+    }
+
+    public boolean isCached() {
+        return cached;
+    }
+
+    public void setCached(boolean cached) {
+        this.cached = cached;
     }
 }

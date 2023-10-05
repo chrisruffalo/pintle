@@ -63,7 +63,7 @@ public class ServerController {
                 try {
                     final Message message = new Message(questionBytes);
                     // send event, wait for result
-                    eventBus.send(Bus.QUERY, new QueryContext(responder, message));
+                    eventBus.send(Bus.CHECK_CACHE, new QueryContext(responder, message));
                 } catch (Exception ex) {
                     // send error to be handled
                     eventBus.send(Bus.HANDLE_ERROR, new QueryContext(responder, ex));
@@ -94,7 +94,7 @@ public class ServerController {
                     try {
                         final Message message = new Message(questionBytes);
                         // send event, wait for result
-                        eventBus.send(Bus.QUERY, new QueryContext(responder, message));
+                        eventBus.send(Bus.CHECK_CACHE, new QueryContext(responder, message));
                     } catch (Exception ex) {
                         // send error to be handled
                         eventBus.send(Bus.HANDLE_ERROR, new QueryContext(responder, ex));

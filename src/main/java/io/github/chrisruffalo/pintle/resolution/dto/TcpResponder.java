@@ -17,7 +17,6 @@ public class TcpResponder extends BaseResponder {
 
     @Override
     public Future<Void> respond(byte[] withBytes) {
-        final Logger logger = Logger.getLogger(this.getClass());
         final Buffer messageWithPrependedLength = Buffer.buffer(2 + withBytes.length);
         messageWithPrependedLength.appendByte((byte) ((withBytes.length >> 8) & 0xFF));
         messageWithPrependedLength.appendByte((byte) (withBytes.length & 0xFF));

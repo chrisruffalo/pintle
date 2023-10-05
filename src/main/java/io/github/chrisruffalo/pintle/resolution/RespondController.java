@@ -24,8 +24,22 @@ public class RespondController {
 
     @ConsumeEvent(Bus.RESPOND)
     public void respond(QueryContext context) throws UnknownHostException {
-        context.getResponder().respond(context.getAnswer()).onComplete((asyncResult) -> {
+        final Message question = context.getQuestion();
+        Message answer = context.getAnswer();
+
+        // cover for null answers
+        if (answer == null) {
+            answer = new Message();
+            answer.getHeader().setFlag(Flags.QR);
+            if(question != null) {
+                answer.getHeader().setID(question.getHeader().getID());
+            }
+            answer.getHeader().setRcode(Rcode.NXDOMAIN);
+        }
+
+        context.getResponder().respond(answer).onComplete((asyncResult) -> {
             bus.send(Bus.LOG, context);
+            bus.send(Bus.UPDATE_CACHE, context);
         });
     }
 

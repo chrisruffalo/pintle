@@ -10,4 +10,7 @@ public class Bus {
 
     public static final String LOG = "pintle-log";
 
+    public static final String CHECK_CACHE = "pintle-check-cache";
+
+    public static final String UPDATE_CACHE = "pintle-update-cache";
 }

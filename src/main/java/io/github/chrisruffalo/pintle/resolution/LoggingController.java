@@ -24,7 +24,7 @@ public class LoggingController {
         String answerText = "";
         final Message question = context.getQuestion();
         final Message answer = context.getAnswer();
-        if (answer != null) {
+        if (answer != null && !answer.getSection(Section.ANSWER).isEmpty()) {
             answerText = "(" + answer.getSection(Section.ANSWER).get(0).toString() + ")";
         }
         if (question != null) {
