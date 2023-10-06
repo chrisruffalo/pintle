@@ -1,14 +1,13 @@
 package io.github.chrisruffalo.pintle.resolution;
 
 import io.github.chrisruffalo.pintle.event.Bus;
-import io.github.chrisruffalo.pintle.resolution.dto.QueryContext;
-import io.github.chrisruffalo.pintle.resolution.dto.Responder;
-import io.github.chrisruffalo.pintle.resolution.dto.TcpResponder;
-import io.github.chrisruffalo.pintle.resolution.dto.UdpResponder;
-import io.netty.handler.logging.ByteBufFormat;
+import io.github.chrisruffalo.pintle.model.QueryContext;
+import io.github.chrisruffalo.pintle.resolution.responder.Responder;
+import io.github.chrisruffalo.pintle.resolution.responder.TcpResponder;
+import io.github.chrisruffalo.pintle.resolution.responder.UdpResponder;
+import io.opentelemetry.api.trace.Tracer;
 import io.quarkus.runtime.StartupEvent;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.datagram.DatagramSocket;
 import io.vertx.core.datagram.DatagramSocketOptions;
 import io.vertx.core.net.NetServer;
@@ -18,7 +17,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
-import org.xbill.DNS.*;
+import org.xbill.DNS.Message;
 
 @ApplicationScoped
 public class ServerController {
@@ -36,21 +35,25 @@ public class ServerController {
     @Inject
     EventBus eventBus;
 
-    public void startServers(@Observes StartupEvent startupEvent) {
+    @Inject
+    Tracer tracer;
+
+    private void startTcpServer() {
         final NetServerOptions options = new NetServerOptions()
-                                            .setPort(SERVER_PORT)
-                                            .setSsl(false).setHost(SERVER_HOST)
-                                            .setReuseAddress(true);
+                .setPort(SERVER_PORT)
+                .setSsl(false).setHost(SERVER_HOST)
+                .setReuseAddress(true);
         final NetServer tcpServer = vertx.createNetServer(options);
 
         tcpServer.connectHandler(socket -> {
             logger.debugf("[TCP] connection from %s:%s", socket.remoteAddress().host(), socket.remoteAddress().port());
 
             socket.handler(buffer -> {
+                final String traceId = tracer.spanBuilder("tcp").startSpan().getSpanContext().getTraceId();
                 final Responder responder = new TcpResponder(socket, socket.remoteAddress().host(), socket.remoteAddress().port());
 
                 if (buffer.length() <= 2) {
-                    eventBus.send(Bus.HANDLE_ERROR, new QueryContext(responder, new IllegalStateException("a dns message cannot be less than 2 bytes")));
+                    eventBus.send(Bus.HANDLE_ERROR, new QueryContext(traceId, responder, new IllegalStateException("a dns message cannot be less than 2 bytes")));
                     return;
                 }
 
@@ -63,10 +66,10 @@ public class ServerController {
                 try {
                     final Message message = new Message(questionBytes);
                     // send event, wait for result
-                    eventBus.send(Bus.CHECK_CACHE, new QueryContext(responder, message));
+                    eventBus.send(Bus.CHECK_CACHE, new QueryContext(traceId, responder, message));
                 } catch (Exception ex) {
                     // send error to be handled
-                    eventBus.send(Bus.HANDLE_ERROR, new QueryContext(responder, ex));
+                    eventBus.send(Bus.HANDLE_ERROR, new QueryContext(traceId, responder, ex));
                 }
             });
 
@@ -80,31 +83,38 @@ public class ServerController {
                 logger.errorf("[TCP] Server listen failed on %s:%s - %s", SERVER_HOST, SERVER_PORT, asyncResult.cause());
             }
         });
+    }
 
-
+    private void startUdpServer() {
         DatagramSocket udpSocket = vertx.createDatagramSocket(new DatagramSocketOptions().setIpV6(false).setReuseAddress(true));
         udpSocket.listen(SERVER_PORT, SERVER_HOST, asyncResult -> {
             if (asyncResult.succeeded()) {
                 logger.infof("[UDP] Server is listening on %s:%d", SERVER_HOST, SERVER_PORT);
 
                 udpSocket.handler(packet -> {
+                    final String traceId = tracer.spanBuilder("udp").startSpan().getSpanContext().getTraceId();
+
                     byte[] questionBytes = packet.data().getBytes();
                     logger.debugf("[UDP] message received from %s:%s, length: %d", packet.sender().host(), packet.sender().port(), questionBytes.length);
                     final Responder responder = new UdpResponder(udpSocket, packet.sender().host(), packet.sender().port());
                     try {
                         final Message message = new Message(questionBytes);
                         // send event, wait for result
-                        eventBus.send(Bus.CHECK_CACHE, new QueryContext(responder, message));
+                        eventBus.send(Bus.CHECK_CACHE, new QueryContext(traceId, responder, message));
                     } catch (Exception ex) {
                         // send error to be handled
-                        eventBus.send(Bus.HANDLE_ERROR, new QueryContext(responder, ex));
+                        eventBus.send(Bus.HANDLE_ERROR, new QueryContext(traceId, responder, ex));
                     }
                 });
             } else {
                 logger.errorf("[UDP] Server listen failed on %s:%d - %s", SERVER_HOST, SERVER_PORT, asyncResult.cause());
             }
         });
+    }
 
+    public void startServers(@Observes StartupEvent startupEvent) {
+        startTcpServer();
+        startUdpServer();
     }
 
 }

@@ -1,7 +1,8 @@
 package io.github.chrisruffalo.pintle.resolution;
 
 import io.github.chrisruffalo.pintle.event.Bus;
-import io.github.chrisruffalo.pintle.resolution.dto.QueryContext;
+import io.github.chrisruffalo.pintle.model.QueryContext;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -12,6 +13,7 @@ import org.xbill.DNS.Message;
 import org.xbill.DNS.Rcode;
 
 import java.net.UnknownHostException;
+import java.time.ZonedDateTime;
 
 @ApplicationScoped
 public class RespondController {
@@ -22,6 +24,7 @@ public class RespondController {
     @Inject
     Logger logger;
 
+    @WithSpan("respond to client")
     @ConsumeEvent(Bus.RESPOND)
     public void respond(QueryContext context) throws UnknownHostException {
         final Message question = context.getQuestion();
@@ -38,8 +41,11 @@ public class RespondController {
         }
 
         context.getResponder().respond(answer).onComplete((asyncResult) -> {
+            context.setResponded(ZonedDateTime.now());
             bus.send(Bus.LOG, context);
             bus.send(Bus.UPDATE_CACHE, context);
+            bus.send(Bus.UPDATE_QUESTION_STATS, context);
+            bus.send(Bus.UPDATE_CLIENT_STATS, context);
         });
     }
 

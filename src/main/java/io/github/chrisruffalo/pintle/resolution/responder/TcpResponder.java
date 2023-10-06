@@ -1,10 +1,8 @@
-package io.github.chrisruffalo.pintle.resolution.dto;
+package io.github.chrisruffalo.pintle.resolution.responder;
 
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
-import org.jboss.logging.Logger;
-import org.xbill.DNS.Message;
 
 public class TcpResponder extends BaseResponder {
 

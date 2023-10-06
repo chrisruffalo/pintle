@@ -1,4 +1,4 @@
-package io.github.chrisruffalo.pintle.resolution.dto;
+package io.github.chrisruffalo.pintle.resolution.responder;
 
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
@@ -15,6 +15,6 @@ public class UdpResponder extends BaseResponder{
 
     @Override
     public Future<Void> respond(byte[] withBytes) {
-        return datagramSocket.send(Buffer.buffer(withBytes), this.getOnPort(), this.getToServer());
+        return datagramSocket.send(Buffer.buffer(withBytes), this.onPort(), this.toClient());
     }
 }
