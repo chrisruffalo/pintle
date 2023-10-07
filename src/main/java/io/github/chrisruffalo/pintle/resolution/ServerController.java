@@ -140,16 +140,16 @@ public class ServerController {
                 mdnsServer.listenMulticastGroup(MDNS_LISTEN_ADDRESS, handler -> {
                     mdnsServer.handler(packet -> {
 
-                        final Span span = tracer.spanBuilder("mdns").startSpan();
-                        final String traceId = span.getSpanContext().getTraceId();
-
                         byte[] questionBytes = packet.data().getBytes();
                         try {
                             final Message message = new Message(questionBytes);
                             if (message.getHeader().getFlag(Flags.QR)) {
-                                logger.infof("[MDNS] response (%d answers)", message.getSection(Section.ANSWER).size());
+                                final Span span = tracer.spanBuilder("mdns-store").startSpan();
+                                final String traceId = span.getSpanContext().getTraceId();
+                                final QueryContext context = new QueryContext(traceId, null, message);
+                                eventBus.send(Bus.STORE_MDNS, context);
                             } else {
-                                logger.infof("[MDNS] multicast message received query: %s", message.getQuestion().getName().toString(true));
+                                logger.debugf("[MDNS] multicast message received query: %s", message.getQuestion().getName().toString(true));
                             }
                         } catch (IOException e) {
                             // nothing, we don't care about non-dns traffic on this address at all

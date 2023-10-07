@@ -19,4 +19,6 @@ public class Bus {
     public static final String UPDATE_QUESTION_STATS = "pintle-update-question-stats";
 
     public static final String UPDATE_CLIENT_STATS = "pintle-update-client-stats";
+
+    public static final String STORE_MDNS = "pintle-store-mdns";
 }
