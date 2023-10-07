@@ -19,7 +19,7 @@ import java.util.Optional;
 public class StatsController {
 
     @Blocking
-    @ConsumeEvent(Bus.UPDATE_QUESTION_STATS)
+    @ConsumeEvent(value = Bus.UPDATE_QUESTION_STATS, ordered = true)
     @WithSpan("update question stats")
     @Transactional
     public void updateStats(QueryContext context) {
@@ -40,7 +40,7 @@ public class StatsController {
         });
 
         // update question
-        statsQuestion.averageMillisecond = ((statsQuestion.averageMillisecond * statsQuestion.queryCount) + context.getElapsedMs()) / (statsQuestion.queryCount + 1);
+        statsQuestion.totalMilliseconds = statsQuestion.totalMilliseconds + context.getElapsedMs();
         statsQuestion.queryCount = statsQuestion.queryCount + 1;
 
         statsQuestion.persist();
@@ -53,15 +53,15 @@ public class StatsController {
 
 
     @Blocking
-    @ConsumeEvent(Bus.UPDATE_CLIENT_STATS)
+    @ConsumeEvent(value = Bus.UPDATE_CLIENT_STATS, ordered = true)
     @WithSpan("update client stats")
     @Transactional
     public void updateClient(QueryContext context) {
         final String clientIp = context.getResponder().toClient();
 
-        final Client client = Client.byIp(clientIp).orElseGet(() -> {
+        final Client client = Client.byAddress(clientIp).orElseGet(() -> {
            final Client c = new Client();
-           c.ip = clientIp;
+           c.address = clientIp;
 
            // should resolve hostname?
 

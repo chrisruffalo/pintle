@@ -13,11 +13,18 @@ import java.util.List;
 public class LogsResource {
 
     @GET
-    @Path("")
     @Produces(MediaType.APPLICATION_JSON)
     @Transactional
     public List<LogItem> logs() {
         return LogItem.listAll();
+    }
+
+    @GET
+    @Path("/count")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Transactional
+    public String count() {
+        return String.valueOf(LogItem.count());
     }
 
     @GET

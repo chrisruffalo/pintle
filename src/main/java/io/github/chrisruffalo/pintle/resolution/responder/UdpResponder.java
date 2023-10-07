@@ -17,4 +17,9 @@ public class UdpResponder extends BaseResponder{
     public Future<Void> respond(byte[] withBytes) {
         return datagramSocket.send(Buffer.buffer(withBytes), this.onPort(), this.toClient());
     }
+
+    @Override
+    public String serviceType() {
+        return "udp";
+    }
 }

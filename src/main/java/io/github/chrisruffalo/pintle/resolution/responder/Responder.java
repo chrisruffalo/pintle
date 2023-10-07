@@ -9,6 +9,8 @@ public interface Responder {
 
     Future<Void> respond(final Message withMessage);
 
+    String serviceType();
+
     String toClient();
 
     int onPort();

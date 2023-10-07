@@ -2,6 +2,7 @@ package io.github.chrisruffalo.pintle.resolution;
 
 import io.github.chrisruffalo.pintle.event.Bus;
 import io.github.chrisruffalo.pintle.model.QueryContext;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.eventbus.EventBus;
@@ -14,6 +15,7 @@ import org.xbill.DNS.Rcode;
 
 import java.net.UnknownHostException;
 import java.time.ZonedDateTime;
+import java.util.Optional;
 
 @ApplicationScoped
 public class RespondController {
@@ -42,6 +44,7 @@ public class RespondController {
 
         context.getResponder().respond(answer).onComplete((asyncResult) -> {
             context.setResponded(ZonedDateTime.now());
+            Optional.ofNullable(context.getSpan()).ifPresent(Span::end);
             bus.send(Bus.LOG, context);
             bus.send(Bus.UPDATE_CACHE, context);
             bus.send(Bus.UPDATE_QUESTION_STATS, context);

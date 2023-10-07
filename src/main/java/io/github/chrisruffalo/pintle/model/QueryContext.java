@@ -1,6 +1,7 @@
 package io.github.chrisruffalo.pintle.model;
 
 import io.github.chrisruffalo.pintle.resolution.responder.Responder;
+import io.opentelemetry.api.trace.Span;
 import org.xbill.DNS.Message;
 
 import java.time.ZonedDateTime;
@@ -29,6 +30,8 @@ public class QueryContext {
 
     private QueryResult result;
 
+    private Span span;
+
     /**
      * When true sets that the source was a cached entry. Cached entries
      * should not re-update the cache.
@@ -46,9 +49,19 @@ public class QueryContext {
         this.question = question;
     }
 
+    public QueryContext(String traceId, Span span, Responder responder, Message question) {
+        this(traceId, responder, question);
+        this.span = span;
+    }
+
     public QueryContext(String traceId, Responder responder, Throwable ex) {
         this(traceId, responder);
         this.exceptions.add(ex);
+    }
+
+    public QueryContext(String traceId, Span span, Responder responder, Throwable ex) {
+        this(traceId, responder, ex);
+        this.span = span;
     }
 
     public Responder getResponder() {
@@ -109,5 +122,17 @@ public class QueryContext {
 
     public String getTraceId() {
         return this.traceId;
+    }
+
+    public void setQuestion(Message question) {
+        this.question = question;
+    }
+
+    public Span getSpan() {
+        return span;
+    }
+
+    public void setSpan(Span span) {
+        this.span = span;
     }
 }

@@ -22,4 +22,9 @@ public class TcpResponder extends BaseResponder {
 
         return socket.end(messageWithPrependedLength);
     }
+
+    @Override
+    public String serviceType() {
+        return "tcp";
+    }
 }

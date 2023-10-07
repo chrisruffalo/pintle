@@ -1,0 +1,155 @@
+pintle:
+  # the endpoints where clients make requests to pintle over the network. pintle
+  # supports udp, tcp, and mdns.
+  listeners:
+    - # all listeners have a name so that they can be
+      # referenced by the application.
+      name: basic-udp
+      # the available types are tcp, udp, and mdns
+      type: udp
+      # udp and tcp need address to bind on, if none is given
+      # the default is "0.0.0.0" or "all"
+      addresses:
+        - 0.0.0.0
+      # udp and tcp need a port to listen on
+      port: 5353
+    - # this is a basic tcp listener, generally this is used for specialty cases
+      # and larger data streams but pintle supports tcp as well
+      name: basic-tcp
+      type: tcp
+      port: 5353
+  # pintle has the ability to add mdns to the cache. what this means is that
+  # when a mdns query is answered the answers will be placed in the cache.
+  # mdns only supports answers that end in `.local` so dns queries looking
+  # for something in the `.local` TLD can be answered by pintle using
+  # this method.
+  mdns:
+    # mdns will only be activated on the following interfaces. if no
+    # interfaces are listed mdns is disabled. if the key word "all" is
+    # found in this list then all interfaces will be tried.
+    interfaces:
+      - "enp6s18"
+  # lists are the sources of blocking/allowing information for queries. before a query is serviced
+  # by a resolver it can be routed through lists and an action (explicit block, explicit allow) can
+  # be taken. this is used to stop traffic from going outbound or explicitly allowing certain hostnames
+  # to be resolved.
+  lists:
+    - # each list has a name so that it can be referenced elsewhere in the configuration
+      name: basic-blocking
+      # a file type block is assumed, the other valid option is regex which takes more
+      # computing power
+      type: file
+      # the action to take, typically block. an allow list can be used in a group
+      # to override certain blocks
+      action: block
+      sources:
+        # the path to a list
+        - /path/to/block.list
+        # if a relative path is given it is _relative to this file_
+        - relative/path/to/block.list
+    - # regex lists can also be provided but they are more intensive and should be used
+      # only if absolutely necessary
+      name: regex-blocking
+      type: regex
+      action: block
+      sources:
+        # the path to a regex list
+        - /path/to/regex.list
+        # if a relative path is given it is _relative to this file_
+        - relative/path/to/regex.list
+  # resolvers are the upstream sources of dns information. these can take the form of dns servers
+  # supporting several protocols, flat files with lists of DNS information, or zone files.
+  resolvers:
+    - # resolvers are identified by name so that they can be used elsewhere in the configuration
+      name: google-udp
+      # udp sources use the udp client to talk to the upstream
+      type: udp
+      sources:
+        # if no port is specified the default port is used
+        - 8.8.8.8
+        # if a port is given it will be used
+        - 8.8.4.4:53
+    - # tcp resolvers are also supported
+      name: google-tcp
+      # tcp uses the tcp
+      type: tcp
+      sources:
+        - 8.8.8.8
+        # just like udp the sources can specify a port
+        - 8.8.4.4:53
+    - # a flat file specifying a hostname and a result is supported
+      name: flat-file
+      type: file
+      sources:
+        # the file format tbd
+        - /path/to/file.entries
+        # if a relative path is given it is _relative to this file_
+        - relative/path
+    - # zone files are also supported
+      name: zone-file
+      type: zone
+      sources:
+        # uses the BIND zone file format
+        - /path/to/zone.db
+        # if a relative path is given it is _relative to this file_
+
+  # a group combines client characteristics (listener, ip, subnet, mac address, etc.) with
+  # the other elements of this configuration (lists, resolver) to produce a dns resolution
+  # result.
+  groups:
+    - # groups are given by name, this group is the default group which is an implicit
+      # group with a configuration of _no lists_ and _all resolvers_ unless otherwise
+      # configured here. unless specified all clients use this group. no other groups
+      # will inherit this groups configuration unless explicitly configured.
+      name: default
+      # lists are applied _in order_ and once a match is found no further action is
+      # taken. an allow coming after a block will not have any affect because the
+      # first thing that happened was to block.
+      lists:
+        - basic-blocking
+      # you _can_ define matchers for the default group but it
+      # is better to just allow unmatched matchers to end up in
+      # this group. if a request has no group it will end up
+      # getting an NXDOMAIN response.
+      matchers: []
+    - # this group demonstrates matching against a listener and
+      # will match all traffic from that listener
+      name: tcp-listener-group
+      # if a group does not have resolvers it will fall back to
+      # using all the default group's resolvers. the default
+      # group implicitly adds all resolvers unless explicitly
+      # specified
+      resolvers:
+        - google-udp
+      lists: [] # in this example _no lists_ will be applied
+      # matchers are applied in the order they are encountered
+      # but multiple groups can be attached to a single query.
+      # however only one block is required to block the query
+      # unless an allow is encountered first.
+      matchers:
+        # matchers have a type and a list of matches, this
+        # one matches against any traffic that comes through
+        # the basic-udp listener
+        - type: listener
+          values:
+            - basic-udp
+    - # this group demonstrates the ability to match clients
+      # that come from particular ips. useful for allowing
+      # certain clients to resolve special
+      name: match-by-ip
+      # no resolvers given means the default group's resolvers will be used
+      # resolvers: []
+      # basic blocking list
+      lists:
+        - basic-blocking
+      # matching in this list is the against the ip
+      matchers:
+        # a single ip can be provided
+        - type: ip
+          values:
+            - 192.168.0.22
+        # or multiple ips
+        - type: ip
+          values:
+            - 192.168.0.44
+            - 192.168.0.55

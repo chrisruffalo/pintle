@@ -18,18 +18,14 @@ import java.util.Optional;
 public class Question extends PanacheEntityBase {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @JsonIgnore
-    @Schema(hidden = true)
-    public String id;
-
     public String type;
 
+    @Id
     public String hostname;
 
-    @JsonProperty("average-millisecond")
-    @Column(name = "average_milliseconds")
-    public long averageMillisecond;
+    @JsonProperty("total-milliseconds")
+    @Column(name = "total_milliseconds")
+    public long totalMilliseconds;
 
     @JsonProperty("query-count")
     @Column(name = "query_count")

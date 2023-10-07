@@ -3,6 +3,7 @@ package io.github.chrisruffalo.pintle.resolution;
 import io.github.chrisruffalo.pintle.event.Bus;
 import io.github.chrisruffalo.pintle.model.QueryContext;
 import io.github.chrisruffalo.pintle.model.QueryResult;
+import io.github.chrisruffalo.pintle.resolution.responder.Responder;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheName;
@@ -17,6 +18,7 @@ import org.xbill.DNS.Record;
 
 import java.net.UnknownHostException;
 import java.time.ZonedDateTime;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 // todo: need to walk down TTL values or use dnsjava cache
@@ -71,7 +73,7 @@ public class CacheController {
     @WithSpan("check cache")
     @ConsumeEvent(Bus.CHECK_CACHE)
     public Uni<Void> check(QueryContext context) throws UnknownHostException {
-        final String key = key(context.getQuestion());
+        final String key = key(context.getResponder(), context.getQuestion());
         if (key == null) {
             bus.send(Bus.QUERY, context);
         }
@@ -120,7 +122,7 @@ public class CacheController {
             return;
         }
         // get the key
-        final String key = key(context.getQuestion());
+        final String key = key(context.getResponder(), context.getQuestion());
         if (key == null) {
             return;
         }
@@ -128,11 +130,11 @@ public class CacheController {
         cache.as(CaffeineCache.class).put(key, CompletableFuture.completedFuture(new CachedAnswer(context.getAnswer().clone())));
     }
 
-    private String key(Message question) {
+    private String key(Responder responder, Message question) {
         if (question == null) {
             return null;
         }
-        return String.format("%s:%s", Type.string(question.getQuestion().getType()), question.getQuestion().getName().toString(true));
+        return String.format("%s:%s:%s", responder.serviceType(), Type.string(question.getQuestion().getType()), question.getQuestion().getName().toString(true));
     }
 
 
