@@ -9,6 +9,7 @@ import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheName;
 import io.quarkus.cache.CaffeineCache;
 import io.quarkus.vertx.ConsumeEvent;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.eventbus.EventBus;
 import jakarta.inject.Inject;
@@ -18,6 +19,7 @@ import org.xbill.DNS.Record;
 
 import java.net.UnknownHostException;
 import java.time.ZonedDateTime;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -112,6 +114,7 @@ public class CacheController {
 
     @WithSpan("update cache")
     @ConsumeEvent(Bus.UPDATE_CACHE)
+    @RunOnVirtualThread
     public void update(QueryContext context) throws UnknownHostException {
         // a context that came from the cache should not update the cache
         if (context.isCached()) {
@@ -137,6 +140,8 @@ public class CacheController {
         return String.format("%s:%s:%s", responder.serviceType(), Type.string(question.getQuestion().getType()), question.getQuestion().getName().toString(true));
     }
 
-
+    public long count() {
+        return cache.as(CaffeineCache.class).keySet().size();
+    }
 
 }

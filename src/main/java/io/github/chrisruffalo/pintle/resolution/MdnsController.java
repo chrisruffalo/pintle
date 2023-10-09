@@ -5,8 +5,8 @@ import io.github.chrisruffalo.pintle.model.QueryContext;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.vertx.ConsumeEvent;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.xbill.DNS.ARecord;
 import org.xbill.DNS.Message;
 import org.xbill.DNS.Record;
 import org.xbill.DNS.Section;
@@ -20,10 +20,7 @@ import java.util.Optional;
 @ApplicationScoped
 public class MdnsController {
 
-    private final Map<String, Map<String, MdnsCacheRecord>> RECORDS = new HashMap<>(){{
-        put("A", new HashMap<>());
-        put("AAAA", new HashMap<>());
-    }};
+    private final Map<String, Map<String, MdnsCacheRecord>> RECORDS = new HashMap<>();
 
     public static class MdnsCacheRecord {
         private String name;
@@ -75,22 +72,29 @@ public class MdnsController {
 
     @WithSpan("store mdns")
     @ConsumeEvent(Bus.STORE_MDNS)
+    @RunOnVirtualThread
     public void store(QueryContext context) {
         if (context == null) {
             return;
         }
         final Message question = context.getQuestion();
-        if (question != null && question.getSection(Section.ANSWER) != null && !question.getSection(Section.ANSWER).isEmpty()) {
-            context.getQuestion().getSection(Section.ANSWER).forEach(r -> {
-                final MdnsCacheRecord cacheRecord = translate(r);
-                RECORDS.getOrDefault(Type.string(r.getType()), new HashMap<>()).put(cacheRecord.name, cacheRecord);
-            });
-        }
-        if (question != null && question.getSection(Section.ADDITIONAL) != null && !question.getSection(Section.ADDITIONAL).isEmpty()) {
-            context.getQuestion().getSection(Section.ADDITIONAL).forEach(r -> {
-                final MdnsCacheRecord cacheRecord = translate(r);
-                RECORDS.getOrDefault(Type.string(r.getType()), new HashMap<>()).put(cacheRecord.name, cacheRecord);
-            });
+        if (question != null) {
+            int[] sections = new int[]{
+                Section.ANSWER,
+                Section.ADDITIONAL
+            };
+            for(int section : sections) {
+                if (question.getSection(section) != null && !question.getSection(section).isEmpty()) {
+                    context.getQuestion().getSection(section).forEach(r -> {
+                        final MdnsCacheRecord cacheRecord = translate(r);
+                        final String key = Type.string(r.getType());
+                        if (!RECORDS.containsKey(key)) {
+                            RECORDS.put(key, new HashMap<>());
+                        }
+                        RECORDS.get(key).put(cacheRecord.name, cacheRecord);
+                    });
+                }
+            }
         }
         Optional.ofNullable(context.getSpan()).ifPresent(Span::end);
     }

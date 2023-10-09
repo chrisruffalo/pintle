@@ -112,12 +112,12 @@ public class QueryContext {
         this.responded = responded;
     }
 
-    public long getElapsedMs() {
+    public int getElapsedMs() {
         ZonedDateTime end = this.responded;
         if (end == null) {
             end = ZonedDateTime.now();
         }
-        return end.toInstant().toEpochMilli() - started.toInstant().toEpochMilli();
+        return (int)(end.toInstant().toEpochMilli() - started.toInstant().toEpochMilli());
     }
 
     public String getTraceId() {

@@ -1,9 +1,9 @@
 package io.github.chrisruffalo.pintle.resolution;
 
 import io.github.chrisruffalo.pintle.event.Bus;
+import io.github.chrisruffalo.pintle.model.QueryContext;
 import io.github.chrisruffalo.pintle.model.stats.Client;
 import io.github.chrisruffalo.pintle.model.stats.Question;
-import io.github.chrisruffalo.pintle.model.QueryContext;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.Blocking;

@@ -7,14 +7,14 @@ create table log_item (
 
     client_ip varchar(45),
     hostname text,
-    type varchar(8),
-    rcode varchar(10),
+    type integer,
+    rcode integer,
 
     service varchar(4),
 
-    result varchar(15) check (result in ('ERROR','RESOLVED','CACHED')),
+    result varchar(8) check (result in ('ERROR','RESOLVED','CACHED')),
 
-    elapsed_time bigint,
+    elapsed_time integer,
 
     end_time timestamp(6) with time zone,
     start_time timestamp(6) with time zone,

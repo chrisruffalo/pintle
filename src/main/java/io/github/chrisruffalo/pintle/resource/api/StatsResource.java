@@ -1,8 +1,9 @@
-package io.github.chrisruffalo.pintle.resource;
+package io.github.chrisruffalo.pintle.resource.api;
 
 import io.github.chrisruffalo.pintle.model.stats.Client;
 import io.github.chrisruffalo.pintle.model.stats.Question;
 import io.github.chrisruffalo.pintle.resolution.StatsController;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import jakarta.inject.Inject;
@@ -22,15 +23,17 @@ public class StatsResource {
     @GET
     @Path("/question")
     @Produces(MediaType.APPLICATION_JSON)
-    public Uni<List<Question>> questionStats() {
-        return Uni.createFrom().voidItem().emitOn(Infrastructure.getDefaultExecutor()).map(v -> controller.getQuestionStats());
+    @RunOnVirtualThread
+    public List<Question> questionStats() {
+        return controller.getQuestionStats();
     }
 
     @GET
     @Path("/client")
     @Produces(MediaType.APPLICATION_JSON)
-    public Uni<List<Client>> clientStats() {
-        return Uni.createFrom().voidItem().emitOn(Infrastructure.getDefaultExecutor()).map(v -> controller.getClientStats());
+    @RunOnVirtualThread
+    public List<Client> clientStats() {
+        return controller.getClientStats();
     }
 
 }

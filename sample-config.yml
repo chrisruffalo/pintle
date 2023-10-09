@@ -18,11 +18,11 @@ pintle:
       name: basic-tcp
       type: tcp
       port: 5353
-  # pintle has the ability to add mdns to the cache. what this means is that
+  # pintle has the ability to read device names and address. what this means is that
   # when a mdns query is answered the answers will be placed in the cache.
   # mdns only supports answers that end in `.local` so dns queries looking
   # for something in the `.local` TLD can be answered by pintle using
-  # this method.
+  # this method. this also allows it to name-resolve IoT and device clients in the UI.
   mdns:
     # mdns will only be activated on the following interfaces. if no
     # interfaces are listed mdns is disabled. if the key word "all" is

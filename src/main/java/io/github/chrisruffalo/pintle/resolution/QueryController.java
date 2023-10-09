@@ -31,8 +31,25 @@ public class QueryController {
     @PostConstruct
     public void init() {
         // todo: read resolvers from file and store them here
-        final InetSocketAddress socketAddress = new InetSocketAddress("8.8.8.8", DEFAULT_PORT);
-        resolver = new SimpleResolver(socketAddress);
+        final InetSocketAddress socketAddress1 = new InetSocketAddress("8.8.8.8", DEFAULT_PORT);
+        final Resolver primary = new SimpleResolver(socketAddress1);
+
+        final InetSocketAddress socketAddress2 = new InetSocketAddress("8.8.4.4", DEFAULT_PORT);
+        final Resolver secondary = new SimpleResolver(socketAddress2);
+
+        final InetSocketAddress socketAddress3 = new InetSocketAddress("1.1.1.1", DEFAULT_PORT);
+        final Resolver tertiary = new SimpleResolver(socketAddress3);
+        tertiary.setTCP(true);
+
+        final ExtendedResolver resolver = new ExtendedResolver();
+        resolver.addResolver(primary);
+        resolver.addResolver(secondary);
+        resolver.addResolver(tertiary);
+        resolver.setLoadBalance(true);
+        resolver.setIgnoreTruncation(true);
+        resolver.setRetries(3);
+
+        this.resolver = resolver;
     }
 
     @WithSpan("resolve answer")

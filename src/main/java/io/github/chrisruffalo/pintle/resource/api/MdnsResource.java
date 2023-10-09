@@ -1,6 +1,7 @@
-package io.github.chrisruffalo.pintle.resource;
+package io.github.chrisruffalo.pintle.resource.api;
 
 import io.github.chrisruffalo.pintle.resolution.MdnsController;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -18,6 +19,7 @@ public class MdnsResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @RunOnVirtualThread
     public Map<String, Map<String, MdnsController.MdnsCacheRecord>> get() {
         return controller.get();
     }
@@ -25,6 +27,7 @@ public class MdnsResource {
     @GET
     @Path("/clear")
     @Produces(MediaType.TEXT_PLAIN)
+    @RunOnVirtualThread
     public String clear() {
         controller.clear();
         return "ok";

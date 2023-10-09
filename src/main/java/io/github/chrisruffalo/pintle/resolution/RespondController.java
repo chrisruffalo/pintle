@@ -5,6 +5,8 @@ import io.github.chrisruffalo.pintle.model.QueryContext;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.vertx.ConsumeEvent;
+import io.smallrye.common.annotation.RunOnVirtualThread;
+import io.vertx.core.Future;
 import io.vertx.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -16,6 +18,7 @@ import org.xbill.DNS.Rcode;
 import java.net.UnknownHostException;
 import java.time.ZonedDateTime;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 @ApplicationScoped
 public class RespondController {
@@ -28,7 +31,7 @@ public class RespondController {
 
     @WithSpan("respond to client")
     @ConsumeEvent(Bus.RESPOND)
-    public void respond(QueryContext context) throws UnknownHostException {
+    public CompletionStage<Void> respond(QueryContext context) throws UnknownHostException {
         final Message question = context.getQuestion();
         Message answer = context.getAnswer();
 
@@ -42,7 +45,7 @@ public class RespondController {
             answer.getHeader().setRcode(Rcode.NXDOMAIN);
         }
 
-        context.getResponder().respond(answer).onComplete((asyncResult) -> {
+        return context.getResponder().respond(answer).toCompletionStage().whenComplete((voidResult, throwable) -> {
             context.setResponded(ZonedDateTime.now());
             Optional.ofNullable(context.getSpan()).ifPresent(Span::end);
             bus.send(Bus.LOG, context);
@@ -53,6 +56,7 @@ public class RespondController {
     }
 
     @ConsumeEvent(Bus.HANDLE_ERROR)
+    @RunOnVirtualThread
     public void handleError(QueryContext context) throws UnknownHostException {
         // turn error into response
         final Message errorAnswer = new Message();

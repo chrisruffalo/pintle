@@ -20,8 +20,8 @@ public class LogItem extends PanacheEntity {
     @Column(name = "client_ip", length = 45)
     public String clientIp;
 
-    @Column(length = 10)
-    public String type;
+    @Column
+    public int type;
 
     @Column(columnDefinition = "text")
     public String hostname;
@@ -31,8 +31,8 @@ public class LogItem extends PanacheEntity {
     public QueryResult result;
 
     @JsonProperty("rcode")
-    @Column(name = "rcode", length = 10)
-    public String responseCode;
+    @Column(name = "rcode")
+    public int responseCode;
 
     /**
      * When the query context is first created
@@ -52,7 +52,7 @@ public class LogItem extends PanacheEntity {
 
     @JsonProperty("elapsed-time")
     @Column(name = "elapsed_time")
-    public long elapsedTime;
+    public int elapsedTime;
 
     @Lob
     public byte[] answer;

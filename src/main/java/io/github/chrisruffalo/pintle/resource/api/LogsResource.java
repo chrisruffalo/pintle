@@ -1,6 +1,7 @@
-package io.github.chrisruffalo.pintle.resource;
+package io.github.chrisruffalo.pintle.resource.api;
 
 import io.github.chrisruffalo.pintle.model.log.LogItem;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -31,6 +32,7 @@ public class LogsResource {
     @Path("/clear")
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
+    @RunOnVirtualThread
     public String clear() {
         LogItem.deleteAll();
         return "ok";
