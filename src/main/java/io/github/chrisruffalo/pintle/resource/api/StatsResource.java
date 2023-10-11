@@ -29,6 +29,14 @@ public class StatsResource {
     }
 
     @GET
+    @Path("/question/count")
+    @Produces(MediaType.TEXT_PLAIN)
+    @RunOnVirtualThread
+    public long questionStatsCount() {
+        return controller.getQuestionCount();
+    }
+
+    @GET
     @Path("/client")
     @Produces(MediaType.APPLICATION_JSON)
     @RunOnVirtualThread

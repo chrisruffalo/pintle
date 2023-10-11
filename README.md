@@ -18,7 +18,7 @@ what I wanted to do and the number of bugs continued to grow and grow.# pintle
 The story of gudgeon (and, thus, pintle) starts back when my children were first
 starting to use devices that were connected to the real internet. There was also
 a need to translate certain domain names to specific IPs on a consistent basis
-like sending all google traffic from certain computers to the google safe-search
+like sending all google search traffic from certain computers to the google safe-search
 IP. I also wanted a way to combine different blocking behavior with different devices. 
 I also wanted to be able to block different types of advertisements based on different
 device characteristics. Then came the problem of IoT devices and separating that

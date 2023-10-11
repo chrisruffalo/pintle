@@ -6,7 +6,6 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
-import io.vertx.core.Future;
 import io.vertx.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -49,6 +48,7 @@ public class RespondController {
             context.setResponded(ZonedDateTime.now());
             Optional.ofNullable(context.getSpan()).ifPresent(Span::end);
             bus.send(Bus.LOG, context);
+            bus.send(Bus.PERSIST_LOG, context);
             bus.send(Bus.UPDATE_CACHE, context);
             bus.send(Bus.UPDATE_QUESTION_STATS, context);
             bus.send(Bus.UPDATE_CLIENT_STATS, context);
@@ -67,7 +67,6 @@ public class RespondController {
         errorAnswer.getHeader().setFlag(Flags.QR);
 
         bus.send(Bus.RESPOND, context);
-        bus.send(Bus.LOG, context);
     }
 
 }

@@ -3,6 +3,8 @@ package io.github.chrisruffalo.pintle.model.stats;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.github.chrisruffalo.pintle.resource.serde.TypeStringSerializer;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.panache.common.Parameters;
 import jakarta.persistence.*;
@@ -19,7 +21,8 @@ import java.util.Optional;
 public class Question extends PanacheEntityBase {
 
     @Id
-    public String type;
+    @JsonSerialize(using = TypeStringSerializer.class)
+    public int type;
 
     @Id
     public String hostname;
@@ -31,6 +34,12 @@ public class Question extends PanacheEntityBase {
     @JsonProperty("query-count")
     @Column(name = "query_count")
     public long queryCount;
+
+    @Transient
+    @JsonProperty("average-milliseconds")
+    public long getAverageMilliseconds() {
+        return totalMilliseconds / queryCount;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -45,7 +54,7 @@ public class Question extends PanacheEntityBase {
         return Objects.hash(type, hostname);
     }
 
-    public static Optional<Question> byTypeAndHostname(final String type, final String hostname) {
+    public static Optional<Question> byTypeAndHostname(final int type, final String hostname) {
         return Question.find("#question.byTypeAndHostname", Parameters.with("type", type).and("hostname", hostname).map()).stream().findFirst().map(o -> (Question)o);
     }
 

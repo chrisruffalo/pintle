@@ -2,24 +2,25 @@ package io.github.chrisruffalo.pintle.resolution;
 
 import io.github.chrisruffalo.pintle.event.Bus;
 import io.github.chrisruffalo.pintle.model.QueryContext;
+import io.github.chrisruffalo.pintle.model.log.AnswerItem;
 import io.github.chrisruffalo.pintle.model.log.LogItem;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.vertx.ConsumeEvent;
-import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.xbill.DNS.Message;
+import org.xbill.DNS.Section;
 import org.xbill.DNS.Type;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import javax.sql.DataSource;
+import java.nio.file.Path;
 import java.util.Optional;
-import java.util.zip.DeflaterOutputStream;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @ApplicationScoped
 public class LoggingController {
@@ -30,7 +31,7 @@ public class LoggingController {
     @Inject
     EventBus bus;
 
-    @WithSpan("log response")
+    @WithSpan("log response to stdout")
     @ConsumeEvent(Bus.LOG)
     @RunOnVirtualThread
     public void log(QueryContext context) {
@@ -44,11 +45,9 @@ public class LoggingController {
         } else if(answer != null) {
             logger.debugf("[%s] responded with answer id=%s %s", context.getTraceId(), answer.getHeader().getID(), appended);
         }
-        bus.send(Bus.PERSIST_LOG, context);
     }
 
-    @Blocking
-    @ConsumeEvent(Bus.PERSIST_LOG)
+    @ConsumeEvent(value = Bus.PERSIST_LOG)
     @WithSpan("persist response")
     @Transactional
     @RunOnVirtualThread
@@ -56,27 +55,29 @@ public class LoggingController {
         final LogItem item = new LogItem();
         item.start = context.getStarted();
         item.result = context.getResult();
-        item.end = context.getResponded();
         item.elapsedTime = context.getElapsedMs();
-        item.service = context.getResponder().serviceType();
+        item.service = context.getResponder().type();
         item.clientIp = context.getResponder().toClient();
         Optional.ofNullable(context.getQuestion()).ifPresent(m -> {
             item.type = m.getQuestion().getType();
-            item.hostname = m.getQuestion().getName().toString(true);
+            item.hostname = m.getQuestion().getName().toString(false);
         });
         Optional.ofNullable(context.getAnswer()).ifPresent(m -> {
-            byte[] uncompressedAnswer = m.toWire();
-            try (
-                final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                final OutputStream stream = new DeflaterOutputStream(baos);
-            ) {
-                stream.write(uncompressedAnswer);
-                item.answer = baos.toByteArray();
-            } catch (IOException e) {
-                item.answer = uncompressedAnswer;
-            }
             item.responseCode = m.getRcode();
+        });
+        Optional.ofNullable(context.getAnswer()).ifPresent(m -> {
+            if (m.getSection(Section.ANSWER) != null && !m.getSection(Section.ANSWER).isEmpty()) {
+                m.getSection(Section.ANSWER).forEach(a -> {
+                    final AnswerItem answerItem = new AnswerItem();
+                    answerItem.logItem = item;
+                    answerItem.type = a.getType();
+                    answerItem.data = a.rdataToString();
+                    item.answers.add(answerItem);
+                });
+            }
         });
         item.persist();
     }
+
+
 }

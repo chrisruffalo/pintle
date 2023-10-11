@@ -101,7 +101,7 @@ public class MdnsController {
 
     private MdnsCacheRecord translate(Record r) {
         final MdnsCacheRecord cacheRecord = new MdnsCacheRecord();
-        cacheRecord.name = r.getName().toString(true);
+        cacheRecord.name = r.getName().toString(false);
         cacheRecord.data = r.rdataToString();
         cacheRecord.rsetType = r.getRRsetType();
         cacheRecord.ttl = r.getTTL();

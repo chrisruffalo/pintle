@@ -1,5 +1,6 @@
 package io.github.chrisruffalo.pintle.resolution.responder;
 
+import io.github.chrisruffalo.pintle.model.ServiceType;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.datagram.DatagramSocket;
@@ -19,7 +20,7 @@ public class UdpResponder extends BaseResponder{
     }
 
     @Override
-    public String serviceType() {
-        return "udp";
+    public ServiceType type() {
+        return ServiceType.UDP;
     }
 }

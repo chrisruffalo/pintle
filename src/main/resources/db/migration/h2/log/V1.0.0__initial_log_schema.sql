@@ -3,16 +3,14 @@ create sequence log_item_SEQ start with 1 increment by 50;
 create table log_item (
     id bigint not null,
 
-    answer blob,
-
     client_ip varchar(45),
-    hostname text,
+    hostname character varying,
     type integer,
-    rcode integer,
+    rcode tinyint check (result between 0 and 23),
 
-    service varchar(4),
+    service tinyint check (result between 0 and 2),
 
-    result varchar(8) check (result in ('ERROR','RESOLVED','CACHED')),
+    result tinyint check (result between 0 and 3),
 
     elapsed_time integer,
 
@@ -22,9 +20,21 @@ create table log_item (
     primary key (id)
 );
 
-CREATE INDEX log_item_hostname ON log_item(hostname);
-CREATE INDEX log_item_result ON log_item(result);
 CREATE INDEX log_item_type ON log_item(type);
-CREATE INDEX log_item_rcode ON log_item(rcode);
+CREATE INDEX log_item_result ON log_item(result);
 CREATE INDEX log_item_service ON log_item(service);
-CREATE INDEX log_item_client_ip ON log_item(client_ip);
+
+create sequence log_answer_SEQ start with 1 increment by 50;
+
+create table log_answer (
+    id bigint not null,
+    data character varying,
+    type integer not null,
+    log_item_id bigint,
+    primary key (id)
+);
+
+alter table if exists log_answer
+    add constraint fk_log_item_id
+    foreign key (log_item_id)
+    references log_item;

@@ -2,18 +2,17 @@ create table client (
     id varchar(40) not null,
     address varchar(45),
     query_count bigint,
+    error_count bigint,
+    total_milliseconds bigint,
     primary key (id)
 );
 
-CREATE INDEX client_ip ON client(address);
-
 create table question (
+    type integer,
+    hostname character varying,
     total_milliseconds bigint,
-    hostname text,
     query_count bigint,
-    type varchar(10),
     primary key (type,hostname)
 );
 
-CREATE INDEX question_hostname ON question(hostname);
 CREATE INDEX question_type ON question(type);

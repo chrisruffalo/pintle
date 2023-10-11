@@ -19,8 +19,6 @@ import org.xbill.DNS.Record;
 
 import java.net.UnknownHostException;
 import java.time.ZonedDateTime;
-import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 // todo: need to walk down TTL values or use dnsjava cache
@@ -137,7 +135,7 @@ public class CacheController {
         if (question == null) {
             return null;
         }
-        return String.format("%s:%s:%s", responder.serviceType(), Type.string(question.getQuestion().getType()), question.getQuestion().getName().toString(true));
+        return String.format("%s:%s:%s", responder.type(), Type.string(question.getQuestion().getType()), question.getQuestion().getName().toString(false));
     }
 
     public long count() {

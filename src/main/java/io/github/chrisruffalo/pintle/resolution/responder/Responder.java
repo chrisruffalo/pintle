@@ -1,5 +1,6 @@
 package io.github.chrisruffalo.pintle.resolution.responder;
 
+import io.github.chrisruffalo.pintle.model.ServiceType;
 import io.vertx.core.Future;
 import org.xbill.DNS.Message;
 
@@ -9,7 +10,7 @@ public interface Responder {
 
     Future<Void> respond(final Message withMessage);
 
-    String serviceType();
+    ServiceType type();
 
     String toClient();
 

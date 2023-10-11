@@ -1,8 +1,11 @@
 package io.github.chrisruffalo.pintle.resolution;
 
+import io.github.chrisruffalo.pintle.config.PintleConfig;
+import io.github.chrisruffalo.pintle.config.ResolverType;
 import io.github.chrisruffalo.pintle.event.Bus;
 import io.github.chrisruffalo.pintle.model.QueryContext;
 import io.github.chrisruffalo.pintle.model.QueryResult;
+import io.github.chrisruffalo.pintle.model.ServiceType;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.eventbus.EventBus;
@@ -11,14 +14,16 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 import org.xbill.DNS.*;
+import org.xbill.DNS.dnssec.ValidatingResolver;
 
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Properties;
 
 @RequestScoped
 public class QueryController {
-
-    private static final int DEFAULT_PORT = 53;
 
     @Inject
     Logger logger;
@@ -26,31 +31,8 @@ public class QueryController {
     @Inject
     EventBus eventBus;
 
-    Resolver resolver;
-
-    @PostConstruct
-    public void init() {
-        // todo: read resolvers from file and store them here
-        final InetSocketAddress socketAddress1 = new InetSocketAddress("8.8.8.8", DEFAULT_PORT);
-        final Resolver primary = new SimpleResolver(socketAddress1);
-
-        final InetSocketAddress socketAddress2 = new InetSocketAddress("8.8.4.4", DEFAULT_PORT);
-        final Resolver secondary = new SimpleResolver(socketAddress2);
-
-        final InetSocketAddress socketAddress3 = new InetSocketAddress("1.1.1.1", DEFAULT_PORT);
-        final Resolver tertiary = new SimpleResolver(socketAddress3);
-        tertiary.setTCP(true);
-
-        final ExtendedResolver resolver = new ExtendedResolver();
-        resolver.addResolver(primary);
-        resolver.addResolver(secondary);
-        resolver.addResolver(tertiary);
-        resolver.setLoadBalance(true);
-        resolver.setIgnoreTruncation(true);
-        resolver.setRetries(3);
-
-        this.resolver = resolver;
-    }
+    @Inject
+    Resolver providedResolver;
 
     @WithSpan("resolve answer")
     @ConsumeEvent(Bus.QUERY)
@@ -71,7 +53,7 @@ public class QueryController {
             logger.debugf("resolving operation: %s", opcode);
 
             // send
-            resolver.sendAsync(question).whenComplete((resolutionAnswer, resolutionException) -> {
+            providedResolver.sendAsync(question).whenComplete((resolutionAnswer, resolutionException) -> {
                 if(resolutionException != null) {
                     context.getExceptions().add(resolutionException);
                     context.setResult(QueryResult.ERROR);

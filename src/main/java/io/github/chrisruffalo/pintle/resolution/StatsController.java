@@ -2,6 +2,7 @@ package io.github.chrisruffalo.pintle.resolution;
 
 import io.github.chrisruffalo.pintle.event.Bus;
 import io.github.chrisruffalo.pintle.model.QueryContext;
+import io.github.chrisruffalo.pintle.model.QueryResult;
 import io.github.chrisruffalo.pintle.model.stats.Client;
 import io.github.chrisruffalo.pintle.model.stats.Question;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
@@ -10,7 +11,6 @@ import io.smallrye.common.annotation.Blocking;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import org.xbill.DNS.Message;
-import org.xbill.DNS.Type;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,8 +29,8 @@ public class StatsController {
         }
 
         final Message question = questionOptional.get();
-        final String type = Type.string(question.getQuestion().getType());
-        final String hostname = question.getQuestion().getName().toString(true);
+        final int type = question.getQuestion().getType();
+        final String hostname = question.getQuestion().getName().toString(false);
 
         final Question statsQuestion = Question.byTypeAndHostname(type, hostname).orElseGet(() -> {
             final Question q = new Question();
@@ -51,6 +51,10 @@ public class StatsController {
         return Question.findAll().list();
     }
 
+    @Transactional
+    public long getQuestionCount() {
+        return Question.count();
+    }
 
     @Blocking
     @ConsumeEvent(value = Bus.UPDATE_CLIENT_STATS, ordered = true)
@@ -68,10 +72,14 @@ public class StatsController {
            return c;
         });
 
-        // should re-resolve hostname?
+        // another process should insert hostname as needed
 
         // update queries?
         client.queryCount = client.queryCount + 1;
+        client.totalMilliseconds = client.totalMilliseconds + context.getElapsedMs();
+        if (QueryResult.ERROR.equals(context.getResult())) {
+            client.errors = client.errors + 1;
+        }
 
         client.persist();
     }
