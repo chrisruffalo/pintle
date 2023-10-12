@@ -10,7 +10,9 @@ public enum ResolverType {
 
     ZONE,
 
-    FILE
+    FILE,
+
+    RESOLVER
 
     ;
 

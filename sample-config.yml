@@ -28,7 +28,7 @@ pintle:
     # interfaces are listed mdns is disabled. if the key word "all" is
     # found in this list then all interfaces will be tried.
     interfaces:
-      - "enp6s18"
+      - "all"
   # lists are the sources of blocking/allowing information for queries. before a query is serviced
   # by a resolver it can be routed through lists and an action (explicit block, explicit allow) can
   # be taken. this is used to stop traffic from going outbound or explicitly allowing certain hostnames
@@ -64,6 +64,10 @@ pintle:
       name: google-udp
       # udp sources use the udp client to talk to the upstream
       type: udp
+      # by default sources are tried
+      # in order until a match is found,
+      # the number of resolvers is exceeded,
+      # or the timeout limit is reached
       sources:
         # if no port is specified the default port is used
         - 8.8.8.8
@@ -73,10 +77,24 @@ pintle:
       name: google-tcp
       # tcp uses the tcp
       type: tcp
+      # the balance option (default: false) allows
+      # the resolver to balance requests between
+      # the sources
+      balance: true
       sources:
         - 8.8.8.8
         # just like udp the sources can specify a port
         - 8.8.4.4:53
+    - # resolvers can reference other resolvers
+      name: parent-resolver
+      type: resolver
+      # without the balance option these resolvers
+      # would be tried, in order, until a match
+      # is found (or a timeout or retry limit reached)
+      balance: true
+      sources:
+        - google-udp
+        - google-tcp
     - # a flat file specifying a hostname and a result is supported
       name: flat-file
       type: file
@@ -107,20 +125,26 @@ pintle:
       # first thing that happened was to block.
       lists:
         - basic-blocking
-      # you _can_ define matchers for the default group but it
-      # is better to just allow unmatched matchers to end up in
-      # this group. if a request has no group it will end up
-      # getting an NXDOMAIN response.
+      # if a group does not have resolvers
+      # it will fall back to responding with NXDOMAIN
+      # when the groups are configured a warning
+      # will be printed if no resolver is attached to a group
+      resolvers:
+        - google-tcp
+      # the default group cannot have matchers. if any matchers
+      # are defined for the default group a warning will be
+      # written to the log and the matchers will be ignored.
       matchers: []
     - # this group demonstrates matching against a listener and
       # will match all traffic from that listener
       name: tcp-listener-group
-      # if a group does not have resolvers it will fall back to
-      # using all the default group's resolvers. the default
-      # group implicitly adds all resolvers unless explicitly
-      # specified
+      # resolvers are tried, in order. if multiple resolvers
+      # are configured. if you would like load balancing, configure
+      # a single resolver that has it configured. this is so that
+      # fallback/priority can be established for a group.
       resolvers:
         - google-udp
+        - google-tcp
       lists: [] # in this example _no lists_ will be applied
       # matchers are applied in the order they are encountered
       # but multiple groups can be attached to a single query.
@@ -132,7 +156,7 @@ pintle:
         # the basic-udp listener
         - type: listener
           values:
-            - basic-udp
+            - basic-tcp
     - # this group demonstrates the ability to match clients
       # that come from particular ips. useful for allowing
       # certain clients to resolve special
@@ -151,5 +175,18 @@ pintle:
         # or multiple ips
         - type: ip
           values:
+            # when multiple values are listed
+            # it functions as an `or` where
+            # if any value matches the
+            # request is matched to the group
             - 192.168.0.44
             - 192.168.0.55
+        # you can also combine matchers
+        - type: or
+          matchers:
+            - type: ip
+              values:
+                - 192.168.0.10
+            - type: range
+              from: 192.168.1.30
+              to: 192.168.1.50

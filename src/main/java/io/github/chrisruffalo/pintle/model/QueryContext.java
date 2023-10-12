@@ -1,5 +1,6 @@
 package io.github.chrisruffalo.pintle.model;
 
+import io.github.chrisruffalo.pintle.config.Group;
 import io.github.chrisruffalo.pintle.resolution.responder.Responder;
 import io.opentelemetry.api.trace.Span;
 import org.xbill.DNS.Message;
@@ -32,11 +33,15 @@ public class QueryContext {
 
     private Span span;
 
+    private Group group;
+
     /**
      * When true sets that the source was a cached entry. Cached entries
      * should not re-update the cache.
      */
     private boolean cached;
+
+    private String listenerName;
 
     QueryContext(String traceId, Responder responder) {
         this.traceId = traceId;
@@ -62,6 +67,15 @@ public class QueryContext {
     public QueryContext(String traceId, Span span, Responder responder, Throwable ex) {
         this(traceId, responder, ex);
         this.span = span;
+    }
+
+
+    public String getListenerName() {
+        return listenerName;
+    }
+
+    public void setListenerName(String listenerName) {
+        this.listenerName = listenerName;
     }
 
     public Responder getResponder() {
@@ -134,5 +148,13 @@ public class QueryContext {
 
     public void setSpan(Span span) {
         this.span = span;
+    }
+
+    public Group getGroup() {
+        return group;
+    }
+
+    public void setGroup(Group group) {
+        this.group = group;
     }
 }

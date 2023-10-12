@@ -6,6 +6,7 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithParentName;
 
 import java.util.List;
+import java.util.Optional;
 
 @ConfigMapping(prefix = "pintle")
 public interface PintleConfig {
@@ -13,8 +14,14 @@ public interface PintleConfig {
     @WithParentName
     Etc etc();
 
-    List<Listener> listeners();
+    Mdns mdns();
 
-    List<Resolver> resolvers();
+    Optional<List<Group>> groups();
+
+    Optional<List<Listener>> listeners();
+
+    Optional<List<ActionList>> lists();
+
+    Optional<List<Resolver>> resolvers();
 
 }

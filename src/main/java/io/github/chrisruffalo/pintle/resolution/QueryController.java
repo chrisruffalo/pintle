@@ -21,6 +21,8 @@ import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 @RequestScoped
 public class QueryController {
@@ -32,28 +34,38 @@ public class QueryController {
     EventBus eventBus;
 
     @Inject
-    Resolver providedResolver;
+    ResolverHandler resolverHandler;
 
     @WithSpan("resolve answer")
     @ConsumeEvent(Bus.QUERY)
-    public void resolve(QueryContext context) throws UnknownHostException {
+    public CompletionStage<Message> resolve(QueryContext context) throws UnknownHostException {
         final Message question = context.getQuestion();
 
+        final int id = question.getHeader().getID();
         final int opcodeInt = question.getHeader().getOpcode();
         final String opcode = Opcode.string(opcodeInt);
         if (Opcode.QUERY != opcodeInt) {
-            final int id = question.getHeader().getID();
             final Message response = new Message(id);
             logger.infof("unsupported operation: %s", opcode);
             response.getHeader().setFlag(Flags.QR);
             response.getHeader().setRcode(Rcode.NOTIMP);
             context.setAnswer(response);
             eventBus.send(Bus.RESPOND, context);
+            return CompletableFuture.completedStage(response);
         } else {
             logger.debugf("resolving operation: %s", opcode);
-
+            final Resolver resolverForGroup = resolverHandler.get(context.getGroup());
+            // if the resolver is null it triggers an NXDOMAIN
+            if (resolverForGroup == null) {
+                logger.warnf("the group '%s' did not have any resolvers, returning NXDOMAIN", context.getGroup().name());
+                final Message response = new Message(id);
+                response.getHeader().setRcode(Rcode.NXDOMAIN);
+                response.getHeader().setFlag(Flags.QR);
+                eventBus.send(Bus.RESPOND, context);
+                return CompletableFuture.completedStage(response);
+            }
             // send
-            providedResolver.sendAsync(question).whenComplete((resolutionAnswer, resolutionException) -> {
+            return resolverForGroup.sendAsync(question).whenCompleteAsync((resolutionAnswer, resolutionException) -> {
                 if(resolutionException != null) {
                     context.getExceptions().add(resolutionException);
                     context.setResult(QueryResult.ERROR);
