@@ -1,0 +1,27 @@
+# a minimal configuration file presented to give an idea of the most basic use-case. this
+# version listens on 0.0.0.0:53/udp and sends requests to the google resolvers, in order,
+# at 8.8.8.8 and 8.8.4.4 on udp port 5050. a single block list at /path/to/block.list
+# will block any domain in that list (return nxdomain).
+pintle:
+  listeners:
+    - name: basic-udp
+      type: udp
+      port: 5353
+  lists:
+    - name: basic-blocking
+      type: file
+      action: block
+      sources:
+        - /path/to/block.list
+  resolvers:
+    - name: google-udp
+      type: udp
+      sources:
+        - 8.8.8.8
+        - 8.8.4.4
+  groups:
+    - name: default
+      lists:
+        - basic-blocking
+      resolvers:
+        - google-udp
