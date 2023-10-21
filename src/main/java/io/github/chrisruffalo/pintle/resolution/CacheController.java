@@ -14,8 +14,8 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.eventbus.EventBus;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
-import org.xbill.DNS.*;
 import org.xbill.DNS.Record;
+import org.xbill.DNS.*;
 
 import java.net.UnknownHostException;
 import java.time.ZonedDateTime;

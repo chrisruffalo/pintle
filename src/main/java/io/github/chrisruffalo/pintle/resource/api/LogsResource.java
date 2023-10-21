@@ -21,7 +21,7 @@ public class LogsResource {
 
     private static final Set<String> SAFE_COLUMNS = new HashSet<>() {{
        add("service");
-       add("clientIp");
+       add("address");
        add("type");
        add("hostname");
        add("result");
@@ -79,24 +79,21 @@ public class LogsResource {
             pageSize = MAX_PAGE_SIZE;
         }
 
-        final DataList<LogItem> container = new DataList<>();
+        // order by
+        if (order != null && !order.trim().isEmpty()) {
+            final List<String> orderBy = Arrays.stream(order.split(",")).filter(SAFE_COLUMNS::contains).toList();
+            if (!orderBy.isEmpty()) {
+                query.append("ORDER BY ").append(String.join(",", orderBy));
+            }
+        }
 
+        final DataList<LogItem> container = new DataList<>();
         PanacheQuery<LogItem> baseQuery = LogItem.find(query.toString(), params);
         baseQuery.page(new Page(page, pageSize));
         container.setTotalCount(baseQuery.count());
         container.setPageIndex(baseQuery.page().index);
         container.setPageSize(baseQuery.page().size);
         container.setTotalPages(baseQuery.pageCount());
-
-        // order by
-        if (order != null || !order.trim().isEmpty()) {
-            final List<String> orderBy = Arrays.stream(order.split(",")).filter(SAFE_COLUMNS::contains).toList();
-            if (!orderBy.isEmpty()) {
-                query.append("ORDER BY ").append(String.join(",", orderBy));
-            }
-        }
-        baseQuery = LogItem.find(query.toString(), params);
-        baseQuery.page(new Page(page, pageSize));
         container.setData(baseQuery.list());
 
         return container;

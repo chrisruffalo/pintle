@@ -2,10 +2,8 @@ package io.github.chrisruffalo.pintle.model.log;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.chrisruffalo.pintle.resource.serde.TypeStringSerializer;
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 
@@ -16,7 +14,11 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "log_answer")
 @JsonIgnoreProperties(value = {"id"})
-public class AnswerItem extends PanacheEntity {
+public class AnswerItem extends PanacheEntityBase {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    public Long id;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)

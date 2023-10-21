@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import org.xbill.DNS.Rcode;
-import org.xbill.DNS.Type;
 
 import java.io.IOException;
 

@@ -7,7 +7,7 @@ import io.github.chrisruffalo.pintle.model.stats.Client;
 import io.github.chrisruffalo.pintle.model.stats.Question;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.vertx.ConsumeEvent;
-import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import org.xbill.DNS.Message;
@@ -18,10 +18,10 @@ import java.util.Optional;
 @ApplicationScoped
 public class StatsController {
 
-    @Blocking
-    @ConsumeEvent(value = Bus.UPDATE_QUESTION_STATS, ordered = true)
+    @ConsumeEvent(value = Bus.UPDATE_QUESTION_STATS)
     @WithSpan("update question stats")
     @Transactional
+    @RunOnVirtualThread
     public void updateStats(QueryContext context) {
         final Optional<Message> questionOptional = Optional.ofNullable(context.getQuestion());
         if (questionOptional.isEmpty()) {
@@ -32,18 +32,11 @@ public class StatsController {
         final int type = question.getQuestion().getType();
         final String hostname = question.getQuestion().getName().toString(false);
 
-        final Question statsQuestion = Question.byTypeAndHostname(type, hostname).orElseGet(() -> {
-            final Question q = new Question();
-            q.type = type;
-            q.hostname = hostname;
-            return q;
-        });
+        final Question statsQuestion = Question.byTypeAndHostname(type, hostname);
 
         // update question
         statsQuestion.totalMilliseconds = statsQuestion.totalMilliseconds + context.getElapsedMs();
         statsQuestion.queryCount = statsQuestion.queryCount + 1;
-
-        statsQuestion.persist();
     }
 
     @Transactional
@@ -56,21 +49,14 @@ public class StatsController {
         return Question.count();
     }
 
-    @Blocking
-    @ConsumeEvent(value = Bus.UPDATE_CLIENT_STATS, ordered = true)
+    @ConsumeEvent(value = Bus.UPDATE_CLIENT_STATS)
     @WithSpan("update client stats")
     @Transactional
+    @RunOnVirtualThread
     public void updateClient(QueryContext context) {
         final String clientIp = context.getResponder().toClient();
 
-        final Client client = Client.byAddress(clientIp).orElseGet(() -> {
-           final Client c = new Client();
-           c.address = clientIp;
-
-           // should resolve hostname?
-
-           return c;
-        });
+        final Client client = Client.byAddress(clientIp);
 
         // another process should insert hostname as needed
 
@@ -80,8 +66,6 @@ public class StatsController {
         if (QueryResult.ERROR.equals(context.getResult())) {
             client.errors = client.errors + 1;
         }
-
-        client.persist();
     }
 
     @Transactional

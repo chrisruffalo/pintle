@@ -1,35 +1,23 @@
 package io.github.chrisruffalo.pintle.config.matcher;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.github.chrisruffalo.pintle.config.Matcher;
 import io.github.chrisruffalo.pintle.config.MatcherType;
 import io.github.chrisruffalo.pintle.model.QueryContext;
 
-import java.util.List;
-
-public class OrMatcher implements Matcher {
-
-    private List<Matcher> matchers;
+/**
+ * A matcher that mathces if any of it's children
+ * match.
+ */
+public class OrMatcher extends MatcherListMatcher {
 
     @Override
     public MatcherType type() {
         return MatcherType.OR;
     }
 
-    public List<Matcher> getMatchers() {
-        return matchers;
-    }
-
-    public void setMatchers(List<Matcher> matchers) {
-        this.matchers = matchers;
-    }
-
     @Override
     public boolean match(QueryContext against) {
-        for(final Matcher matcher : matchers) {
+        for(final Matcher matcher : this.getMatchers()) {
             if (matcher.match(against)) {
                 return true;
             }

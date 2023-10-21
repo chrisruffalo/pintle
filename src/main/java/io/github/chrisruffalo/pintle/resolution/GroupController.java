@@ -3,15 +3,15 @@ package io.github.chrisruffalo.pintle.resolution;
 import io.github.chrisruffalo.pintle.config.Group;
 import io.github.chrisruffalo.pintle.config.Matcher;
 import io.github.chrisruffalo.pintle.config.PintleConfig;
+import io.github.chrisruffalo.pintle.config.producer.ConfigProducer;
 import io.github.chrisruffalo.pintle.event.Bus;
+import io.github.chrisruffalo.pintle.event.ConfigUpdate;
 import io.github.chrisruffalo.pintle.model.QueryContext;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
-import io.quarkus.runtime.StartupEvent;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.vertx.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
@@ -26,6 +26,8 @@ public class GroupController {
     private static final String DEFAULT_GROUP_NAME = "default";
 
     @Inject
+    ConfigProducer configProducer;
+
     PintleConfig config;
 
     @Inject
@@ -37,7 +39,9 @@ public class GroupController {
     private Group defaultGroup = null;
     private final Map<String, Group> groups = new HashMap<>();
 
-    public void configure(@Observes StartupEvent startupEvent) {
+    @ConsumeEvent(Bus.CONFIG_UPDATE_GROUPS)
+    public void configure(ConfigUpdate event) {
+        config = configProducer.get(event.getId());
         // go through the config if available
         if (config.groups().isPresent() || !config.groups().get().isEmpty()) {
             for (final Group group : config.groups().get()) {
@@ -74,12 +78,16 @@ public class GroupController {
         // get the first matching group. first match wins.
         if (config.groups().isPresent() && !config.groups().get().isEmpty()) {
             for (final Group group : config.groups().get()) {
+                if (DEFAULT_GROUP_NAME.equals(group.name())) {
+                    continue;
+                }
                 if(group.matches(context)) {
                     context.setGroup(group);
                     break;
                 }
             }
         }
+
         logger.debugf("[%s] mapped query to group '%s'", context.getTraceId(), context.getGroup().name());
         bus.send(Bus.CHECK_CACHE, context);
     }

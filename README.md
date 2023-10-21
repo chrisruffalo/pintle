@@ -46,7 +46,7 @@ do this simply change directories into each and run `mvn clean install`.
 
 ### Running in Developer Mode
 ```shell
-[]$ mvn clean quarkus:dev
+[]$ mvn clean quarkus:dev -Dquarkus.args='-c sample-config.yml'
 ```
 
 ### Building in Java Mode

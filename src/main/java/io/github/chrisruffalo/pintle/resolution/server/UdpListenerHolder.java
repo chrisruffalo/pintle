@@ -2,11 +2,7 @@ package io.github.chrisruffalo.pintle.resolution.server;
 
 import io.github.chrisruffalo.pintle.config.Listener;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import io.vertx.core.datagram.DatagramSocket;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 public class UdpListenerHolder implements ListenerHolder {
 

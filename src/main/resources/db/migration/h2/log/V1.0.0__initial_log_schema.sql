@@ -1,21 +1,27 @@
-create sequence log_item_SEQ start with 1 increment by 50;
-
 create table log_item (
-    id bigint not null,
+    id bigint auto_increment,
 
-    client_ip varchar(45),
+    -- identify the querying address by ip
+    clientAddress character varying,
+
+    -- the queried hostname (name)
     hostname character varying,
-    type integer,
+
+    -- the type, unfortunately, goes above 128
+    type smallint,
+
+    -- these codes do not need values over 128
     rcode tinyint check (result between 0 and 23),
-
     service tinyint check (result between 0 and 2),
-
     result tinyint check (result between 0 and 3),
 
-    elapsed_time integer,
+    -- the time in ms that have elapsed since the start time, practically speaking this won't
+    -- be longer than the timeout of ~5000. smallint can store enough ms to cover 30s. in
+    -- practical terms as long as the timeout is less than 30s this would never be hit.
+    elapsed_time smallint,
 
-    end_time timestamp(6) with time zone,
-    start_time timestamp(6) with time zone,
+    -- the timestamp with precision down to hundredth's of a millisecond
+    start_time timestamp(2) with time zone,
 
     primary key (id)
 );
@@ -24,12 +30,10 @@ CREATE INDEX log_item_type ON log_item(type);
 CREATE INDEX log_item_result ON log_item(result);
 CREATE INDEX log_item_service ON log_item(service);
 
-create sequence log_answer_SEQ start with 1 increment by 50;
-
 create table log_answer (
-    id bigint not null,
-    data character varying,
-    type integer not null,
+    id bigint auto_increment,
+    type smallint,
+    data character varying not null,
     log_item_id bigint,
     primary key (id)
 );

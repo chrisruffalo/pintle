@@ -16,8 +16,12 @@ public class TcpResponder extends BaseResponder {
 
     @Override
     public Future<Void> respond(byte[] withBytes) {
+        // the tcp packets need to have the length sent back with them, which is the first two
+        // bytes of the message. this means that we have to append two bytes to the current length
+        // of the message and then add the length, spread across two bytes, to the message
+        // the tcp client in dnsjava (NioTcpClient) references https://tools.ietf.org/html/rfc7766#section-8
         final Buffer messageWithPrependedLength = Buffer.buffer(2 + withBytes.length);
-        messageWithPrependedLength.appendByte((byte) ((withBytes.length >> 8) & 0xFF));
+        messageWithPrependedLength.appendByte((byte) (withBytes.length >>> 8));
         messageWithPrependedLength.appendByte((byte) (withBytes.length & 0xFF));
         messageWithPrependedLength.appendBytes(withBytes);
 

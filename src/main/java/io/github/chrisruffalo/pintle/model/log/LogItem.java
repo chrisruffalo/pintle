@@ -7,8 +7,6 @@ import io.github.chrisruffalo.pintle.model.QueryResult;
 import io.github.chrisruffalo.pintle.model.ServiceType;
 import io.github.chrisruffalo.pintle.resource.serde.RcodeStringSerializer;
 import io.github.chrisruffalo.pintle.resource.serde.TypeStringSerializer;
-import io.quarkus.agroal.DataSource;
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 
@@ -20,15 +18,18 @@ import java.util.List;
 @Entity
 @Table(name = "log_item")
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-public class LogItem extends PanacheEntity {
+public class LogItem extends PanacheEntityBase {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    public Long id;
 
     @Column
     @Enumerated(EnumType.ORDINAL)
     public ServiceType service;
 
-    @JsonProperty("client-ip")
-    @Column(name = "client_ip", length = 45)
-    public String clientIp;
+    @JsonProperty("client-address")
+    public String clientAddress;
 
     @Column
     @JsonSerialize(using = TypeStringSerializer.class)

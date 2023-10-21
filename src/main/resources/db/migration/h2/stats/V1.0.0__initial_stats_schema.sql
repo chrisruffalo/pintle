@@ -1,6 +1,6 @@
 create table client (
-    id varchar(40) not null,
-    address varchar(45),
+    id bigint auto_increment,
+    address character varying not null,
     query_count bigint,
     error_count bigint,
     total_milliseconds bigint,
@@ -8,11 +8,12 @@ create table client (
 );
 
 create table question (
-    type integer,
-    hostname character varying,
+    id bigint auto_increment,
+    type integer not null,
+    hostname character varying not null,
     total_milliseconds bigint,
     query_count bigint,
-    primary key (type,hostname)
+    primary key (id)
 );
 
 CREATE INDEX question_type ON question(type);

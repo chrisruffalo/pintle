@@ -1,16 +1,12 @@
 package io.github.chrisruffalo.pintle.model.stats;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.github.chrisruffalo.pintle.resource.serde.TypeStringSerializer;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.panache.common.Parameters;
 import jakarta.persistence.*;
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-import java.util.Optional;
+import java.util.Objects;
 
 @Entity(name = "client")
 @NamedQueries({
@@ -20,11 +16,8 @@ import java.util.Optional;
 public class Client extends PanacheEntityBase {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @JsonIgnore
-    @Schema(hidden = true)
-    @JsonSerialize(using = TypeStringSerializer.class)
-    public String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    public Long id;
 
     public String address;
 
@@ -42,11 +35,32 @@ public class Client extends PanacheEntityBase {
     @Transient
     @JsonProperty("average-milliseconds")
     public long getAverageMilliseconds() {
-        return totalMilliseconds / queryCount;
+        return queryCount == 0 ? 0 : totalMilliseconds / queryCount;
     }
 
-    public static Optional<Client> byAddress(final String address) {
-        return Client.find("#client.byAddress", Parameters.with("address", address).map()).stream().findFirst().map(o -> (Client)o);
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Client client = (Client) o;
+        return Objects.equals(address, client.address);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(address);
+    }
+
+    public static Client byAddress(final String address) {
+        return (Client) Client.find("#client.byAddress", Parameters.with("address", address).map())
+                .withLock(LockModeType.PESSIMISTIC_WRITE)
+                .firstResultOptional()
+                .orElseGet(() -> {
+                    final Client c = new Client();
+                    c.address = address;
+                    c.persist();
+                    return c;
+                });
     }
 
 }

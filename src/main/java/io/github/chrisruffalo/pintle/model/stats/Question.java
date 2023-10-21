@@ -1,6 +1,5 @@
 package io.github.chrisruffalo.pintle.model.stats;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -8,10 +7,8 @@ import io.github.chrisruffalo.pintle.resource.serde.TypeStringSerializer;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.panache.common.Parameters;
 import jakarta.persistence.*;
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.util.Objects;
-import java.util.Optional;
 
 @Entity(name = "question")
 @NamedQueries({
@@ -21,10 +18,12 @@ import java.util.Optional;
 public class Question extends PanacheEntityBase {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    public Long id;
+
     @JsonSerialize(using = TypeStringSerializer.class)
     public int type;
 
-    @Id
     public String hostname;
 
     @JsonProperty("total-milliseconds")
@@ -38,7 +37,7 @@ public class Question extends PanacheEntityBase {
     @Transient
     @JsonProperty("average-milliseconds")
     public long getAverageMilliseconds() {
-        return totalMilliseconds / queryCount;
+        return queryCount == 0 ? 0 : totalMilliseconds / queryCount;
     }
 
     @Override
@@ -49,13 +48,29 @@ public class Question extends PanacheEntityBase {
         return Objects.equals(type, question.type) && Objects.equals(hostname, question.hostname);
     }
 
+    public Question() {
+
+    }
+
+    public Question(int type, String hostname) {
+        this.type = type;
+        this.hostname = hostname;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(type, hostname);
     }
 
-    public static Optional<Question> byTypeAndHostname(final int type, final String hostname) {
-        return Question.find("#question.byTypeAndHostname", Parameters.with("type", type).and("hostname", hostname).map()).stream().findFirst().map(o -> (Question)o);
+    public static Question byTypeAndHostname(final int type, final String hostname) {
+        return (Question) Question.find("#question.byTypeAndHostname", Parameters.with("type", type).and("hostname", hostname).map())
+                .withLock(LockModeType.PESSIMISTIC_WRITE)
+                .firstResultOptional()
+                .orElseGet(() -> {
+                    final Question q = new Question(type, hostname);
+                    q.persist();
+                    return q;
+                });
     }
 
 }

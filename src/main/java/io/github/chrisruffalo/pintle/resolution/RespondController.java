@@ -46,12 +46,13 @@ public class RespondController {
 
         return context.getResponder().respond(answer).toCompletionStage().whenComplete((voidResult, throwable) -> {
             context.setResponded(ZonedDateTime.now());
-            Optional.ofNullable(context.getSpan()).ifPresent(Span::end);
             bus.send(Bus.LOG, context);
             bus.send(Bus.PERSIST_LOG, context);
             bus.send(Bus.UPDATE_CACHE, context);
             bus.send(Bus.UPDATE_QUESTION_STATS, context);
             bus.send(Bus.UPDATE_CLIENT_STATS, context);
+        }).thenRun(() -> {
+            Optional.ofNullable(context.getSpan()).ifPresent(Span::end);
         });
     }
 
