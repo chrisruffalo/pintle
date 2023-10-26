@@ -81,7 +81,7 @@ public class ListController {
         if (list == null) {
             return;
         }
-        logger.infof("processing list %s", listUpdate.getListName());
+        logger.debugf("processing list %s", listUpdate.getListName());
         final StoredList stored = StoredList.byName(listUpdate.getListName()).orElseGet(() -> {
             final StoredList sl = new StoredList();
             sl.name = listUpdate.getListName();

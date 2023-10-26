@@ -8,6 +8,7 @@ import io.github.chrisruffalo.pintle.model.list.StoredSource;
 import io.github.chrisruffalo.pintle.util.DownloadUtil;
 import io.github.chrisruffalo.pintle.util.PathUtil;
 import io.github.chrisruffalo.pintle.util.ShaUtil;
+import io.quarkus.panache.common.Parameters;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -50,12 +51,12 @@ public abstract class FileSourceHandler implements SourceHandler {
         try {
             sourceUri = URI.create(source);
         } catch (Exception ex) {
-            logger.errorf("[list: %s] could not parse '%s' as a valid uri for a list source: %s", config.name(), source, ex.getMessage());
+            logger.errorf("[%s] could not parse '%s' as a valid uri for a list source: %s", config.name(), source, ex.getMessage());
             return Optional.empty();
         }
 
         // see if the source exists already
-        StoredSource storedSource = (StoredSource) StoredSource.findByIdOptional(sourceUri.toString()).orElseGet(() -> {
+        StoredSource storedSource = (StoredSource) StoredSource.find("uri = :uri", Parameters.with("uri", sourceUri.toString())).firstResultOptional().orElseGet(() -> {
             final StoredSource newSource = new StoredSource();
             newSource.uri = sourceUri.toString();
             newSource.persist();
@@ -73,7 +74,7 @@ public abstract class FileSourceHandler implements SourceHandler {
                 pintleConfig.etc().home()
             );
             if (sourcePath.isEmpty()) {
-                logger.infof("[list: %s] could not find the file source '%s'", config.name(), sourceUri);
+                logger.infof("[%s] could not find the file source '%s'", config.name(), sourceUri);
                 return Optional.empty();
             }
         }

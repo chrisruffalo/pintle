@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.chrisruffalo.pintle.resource.serde.TypeStringSerializer;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import jakarta.persistence.*;
 
 /**
@@ -14,6 +15,7 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "log_answer")
 @JsonIgnoreProperties(value = {"id"})
+@RegisterForReflection
 public class AnswerItem extends PanacheEntityBase {
 
     @Id

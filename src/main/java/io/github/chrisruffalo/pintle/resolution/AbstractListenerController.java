@@ -22,9 +22,6 @@ public abstract class AbstractListenerController {
     PintleConfig config;
 
     @Inject
-    Logger logger;
-
-    @Inject
     Vertx vertx;
 
     @Inject
@@ -35,6 +32,8 @@ public abstract class AbstractListenerController {
 
     protected final List<ListenerHolder> listeners = new LinkedList<>();
 
+    protected abstract Logger logger();
+
     public void stopServers(@Observes ShutdownEvent shutdownEvent) {
         for (final ListenerHolder server : this.listeners) {
             // services with unspecified types go here
@@ -44,11 +43,11 @@ public abstract class AbstractListenerController {
 
             server.stop().onComplete(handler -> {
                 if (handler.succeeded()) {
-                    logger.infof("shutdown server %s", server.name());
+                    logger().infof("shutdown server %s", server.name());
                 } else if(handler.cause() != null) {
-                    logger.infof("failed to shutdown server %s: %s", server.name(), handler.cause().getMessage());
+                    logger().infof("failed to shutdown server %s: %s", server.name(), handler.cause().getMessage());
                 } else {
-                    logger.infof("failed to shutdown server %s: %s", server.name(), handler.cause().getMessage());
+                    logger().infof("failed to shutdown server %s: %s", server.name(), handler.cause().getMessage());
                 }
             }).result();
         }

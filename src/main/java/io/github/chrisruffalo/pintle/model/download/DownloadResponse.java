@@ -1,7 +1,10 @@
 package io.github.chrisruffalo.pintle.model.download;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
 import java.time.ZonedDateTime;
 
+@RegisterForReflection
 public class DownloadResponse {
 
     private boolean downloaded = false;

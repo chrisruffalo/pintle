@@ -1,23 +1,26 @@
 package io.github.chrisruffalo.pintle.model.list;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import jakarta.persistence.*;
 
 import java.time.ZonedDateTime;
+import java.util.Objects;
 
 @Entity(name = "source")
 @Table(name = "source")
 @NamedQueries({
     @NamedQuery(name = "source.byUri", query = "from source where uri = :uri"),
 })
+@RegisterForReflection
 public class StoredSource extends PanacheEntityBase {
 
     @Id
-    public String uri;
-
-    @Column(insertable = false, updatable = false)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     public Long id;
+
+    @Column
+    public String uri;
 
     /**
      * Path, relative to the cache directory,
@@ -45,4 +48,16 @@ public class StoredSource extends PanacheEntityBase {
     @Column(name = "cache_until")
     public ZonedDateTime cacheUntil;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        StoredSource that = (StoredSource) o;
+        return Objects.equals(uri, that.uri);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(uri);
+    }
 }

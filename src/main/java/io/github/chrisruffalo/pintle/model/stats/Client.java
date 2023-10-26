@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.panache.common.Parameters;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import jakarta.persistence.*;
 
 import java.util.Objects;
@@ -12,6 +13,7 @@ import java.util.Objects;
 @NamedQueries({
     @NamedQuery(name = "client.byAddress", query = "from client where address = :address"),
 })
+@RegisterForReflection
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class Client extends PanacheEntityBase {
 

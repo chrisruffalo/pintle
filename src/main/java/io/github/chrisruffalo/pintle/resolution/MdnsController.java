@@ -13,6 +13,8 @@ import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.vertx.core.datagram.DatagramSocket;
 import io.vertx.core.datagram.DatagramSocketOptions;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 import org.xbill.DNS.Record;
 import org.xbill.DNS.*;
 
@@ -29,6 +31,14 @@ public class MdnsController extends AbstractListenerController {
     private static final int MDNS_PORT = 5353;
 
     private final Map<String, Map<String, MdnsCacheRecord>> RECORDS = new HashMap<>();
+
+    @Inject
+    Logger logger;
+
+    @Override
+    protected Logger logger() {
+        return logger;
+    }
 
     public static class MdnsCacheRecord {
         private String name;

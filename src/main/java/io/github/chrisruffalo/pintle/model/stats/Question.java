@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.chrisruffalo.pintle.resource.serde.TypeStringSerializer;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.panache.common.Parameters;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import jakarta.persistence.*;
 
 import java.util.Objects;
@@ -14,6 +15,7 @@ import java.util.Objects;
 @NamedQueries({
     @NamedQuery(name = "question.byTypeAndHostname", query = "from question where type = :type and hostname = :hostname"),
 })
+@RegisterForReflection
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class Question extends PanacheEntityBase {
 

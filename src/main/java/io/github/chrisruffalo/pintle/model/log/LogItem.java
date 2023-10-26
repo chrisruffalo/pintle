@@ -8,6 +8,7 @@ import io.github.chrisruffalo.pintle.model.ServiceType;
 import io.github.chrisruffalo.pintle.resource.serde.RcodeStringSerializer;
 import io.github.chrisruffalo.pintle.resource.serde.TypeStringSerializer;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import jakarta.persistence.*;
 
 import java.time.ZonedDateTime;
@@ -18,6 +19,7 @@ import java.util.List;
 @Entity
 @Table(name = "log_item")
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
+@RegisterForReflection
 public class LogItem extends PanacheEntityBase {
 
     @Id

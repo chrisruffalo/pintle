@@ -18,6 +18,8 @@ import io.vertx.core.datagram.DatagramSocketOptions;
 import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetServerOptions;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 import org.xbill.DNS.Message;
 
 import java.util.List;
@@ -28,6 +30,14 @@ public class ListenerController extends AbstractListenerController {
     private static final String SERVER_HOST = "0.0.0.0";
 
     private static final int SERVER_PORT = 5353;
+
+    @Inject
+    Logger logger;
+
+    @Override
+    protected Logger logger() {
+        return logger;
+    }
 
     private ListenerHolder startServer(final Listener config) {
         if(ServiceType.TCP.equals(config.type())) {
@@ -144,5 +154,4 @@ public class ListenerController extends AbstractListenerController {
             this.listeners.add(startServer(listener));
         }
     }
-
 }

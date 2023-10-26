@@ -3,6 +3,7 @@ package io.github.chrisruffalo.pintle.model;
 import io.github.chrisruffalo.pintle.config.Group;
 import io.github.chrisruffalo.pintle.resolution.responder.Responder;
 import io.opentelemetry.api.trace.Span;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import org.xbill.DNS.Message;
 
 import java.time.ZonedDateTime;
@@ -13,6 +14,7 @@ import java.util.List;
  * Handles the accumulation of data throughout the process
  * of resolution
  */
+@RegisterForReflection
 public class QueryContext {
 
     private final String traceId;
