@@ -10,6 +10,6 @@ public interface SourceHandler {
 
     Optional<StoredSource> load(long listId, PintleConfig pintleConfig, ActionList config, String source);
 
-    int process(long listId, ActionList config, StoredSource storedSource);
+    long process(long listId, ActionList config, StoredSource storedSource);
 
 }

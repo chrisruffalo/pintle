@@ -137,7 +137,7 @@ public class ListController {
             // todo: log
             return;
         }
-        int loaded = processorOptional.get().process(processSourceEvent.getStoredListId(), processSourceEvent.getConfig(), source);
+        long loaded = processorOptional.get().process(processSourceEvent.getStoredListId(), processSourceEvent.getConfig(), source);
         logger.debugf("loaded %d items", loaded);
     }
 

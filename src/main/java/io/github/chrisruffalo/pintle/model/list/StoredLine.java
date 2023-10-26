@@ -20,7 +20,8 @@ import java.util.stream.Collectors;
 @NamedQueries({
     @NamedQuery(name = "line.byList", query = "from line where listId = :listId"),
     @NamedQuery(name = "line.byListAndSource", query = "from line where listId = :listId and sourceId = :sourceId"),
-    @NamedQuery(name = "line.hostAndResolveByListAndSource", query = "select hostname, resolveTo from line where listId = :listId and sourceId = :sourceId")
+    @NamedQuery(name = "line.hostAndResolveByListAndSource", query = "select hostname, resolveTo from line where listId = :listId and sourceId = :sourceId"),
+    @NamedQuery(name = "line.byListAndSourceAndVersion", query = "from line where listId = :listId and sourceId = :sourceId and version = :sourceVersion")
 })
 @RegisterForReflection
 public class StoredLine extends PanacheEntityBase {
@@ -48,6 +49,10 @@ public class StoredLine extends PanacheEntityBase {
     @Id
     @Column(name = "resolve_to")
     public String resolveTo;
+
+    @Id
+    @Column(name = "source_version")
+    public long version = 1;
 
     public StoredLine() {
 
@@ -79,16 +84,12 @@ public class StoredLine extends PanacheEntityBase {
         return Objects.hash(listId, sourceId, hostname, resolveTo);
     }
 
-    public static Set<String> getHostnamesByListAndSource(final long listId, final long sourceId) {
+    public static long getCountForListSourceVersion(final long listId, final long sourceId, final long sourceVersion) {
         final PanacheQuery<StoredLine> storedLinesQuery = StoredLine
-            .find("#line.hostAndResolveByListAndSource", Parameters.with("sourceId", sourceId).and("listId", listId))
-            .project(StoredLine.class)
+            .find("#line.byListAndSourceAndVersion",
+                    Parameters.with("sourceId", sourceId).and("listId", listId).and("sourceVersion", sourceVersion))
             ;
 
-        if (storedLinesQuery.count() < 1) {
-            return Collections.emptySet();
-        }
-
-        return new HashSet<>(storedLinesQuery.list().stream().map(a -> a.hostname + "|" + a.resolveTo).toList());
+        return storedLinesQuery.count();
     }
 }

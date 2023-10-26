@@ -30,7 +30,7 @@ public class HostFileHandler extends FileSourceHandler {
     @Override
     @Transactional
     @RunOnVirtualThread
-    public int process(long listId, ActionList config, StoredSource storedSource) {
+    public long process(long listId, ActionList config, StoredSource storedSource) {
 
         // read lines
         final Path dataPath = PathUtil.real(storedSource.dataPath);
@@ -41,12 +41,36 @@ public class HostFileHandler extends FileSourceHandler {
             return 0;
         }
 
+        final URI uri;
+        try {
+            uri = new URI(storedSource.uri);
+        } catch (URISyntaxException e) {
+            // there should be no literal way to get here, the uri had
+            // to survive parsing to get into the db and thus into the
+            // storedSource
+            throw new RuntimeException(e);
+        }
+
+        final String host = uri.getHost();
+        final String path = uri.getPath();
+        String file;
+        if (path.endsWith("/")) {
+            file = "/";
+        } else {
+            file = uri.getPath().substring(uri.getPath().lastIndexOf("/") + 1);
+        }
+
         // start the clock
         final ZonedDateTime start = ZonedDateTime.now();
 
         logger.debugf("load list %d, source %d, from data path: %s", listId, storedSource.id, dataPath);
 
-        final Set<String> alreadyLoadedHostnames = StoredLine.getHostnamesByListAndSource(listId, storedSource.id);
+        final long versionCount = StoredLine.getCountForListSourceVersion(listId, storedSource.id, storedSource.version);
+        if (versionCount > 0) {
+            logger.infof("[%s] version %d of %s/.../%s already loaded", config.name(), storedSource.version, host, file);
+            return versionCount;
+        }
+
         final Set<String> dontLoadDuplicates = new HashSet<>();
 
         int loaded = 0;
@@ -81,44 +105,19 @@ public class HostFileHandler extends FileSourceHandler {
                 }
                 dontLoadDuplicates.add(key);
 
-                if (alreadyLoadedHostnames.contains(key)) {
-                    // nothing to do here, a line with the same resolution exists
-                } else {
-                    final StoredLine newLine = new StoredLine();
-                    newLine.listId = listId;
-                    newLine.sourceId = storedSource.id;
-                    newLine.hostname = hostname;
-                    if (resolveTo != null && !resolveTo.isEmpty()) {
-                        newLine.resolveTo = resolveTo;
-                    }
-                    newLine.persist();
-                    loaded++;
+                final StoredLine newLine = new StoredLine();
+                newLine.listId = listId;
+                newLine.sourceId = storedSource.id;
+                newLine.hostname = hostname;
+                if (resolveTo != null && !resolveTo.isEmpty()) {
+                    newLine.resolveTo = resolveTo;
                 }
+                newLine.version = storedSource.version;
+                newLine.persist();
+                loaded++;
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
-        }
-
-        // flush current batch/context
-        Panache.getEntityManager("list-db").flush();
-
-        final URI uri;
-        try {
-             uri = new URI(storedSource.uri);
-        } catch (URISyntaxException e) {
-            // there should be no literal way to get here, the uri had
-            // to survive parsing to get into the db and thus into the
-            // storedSource
-            throw new RuntimeException(e);
-        }
-
-        final String host = uri.getHost();
-        final String path = uri.getPath();
-        String file;
-        if (path.endsWith("/")) {
-            file = "/";
-        } else {
-            file = uri.getPath().substring(uri.getPath().lastIndexOf("/") + 1);
         }
 
         logger.infof("[%s] %d new from %s/.../%s [%dms]", config.name(), loaded, host, file, start.until(ZonedDateTime.now(), ChronoUnit.MILLIS));

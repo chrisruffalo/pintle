@@ -56,13 +56,14 @@ public abstract class FileSourceHandler implements SourceHandler {
         }
 
         // see if the source exists already
-        StoredSource storedSource = (StoredSource) StoredSource.find("uri = :uri", Parameters.with("uri", sourceUri.toString())).firstResultOptional().orElseGet(() -> {
+        final StoredSource storedSource = (StoredSource) StoredSource.find("uri = :uri", Parameters.with("uri", sourceUri.toString())).firstResultOptional().orElseGet(() -> {
             final StoredSource newSource = new StoredSource();
             newSource.uri = sourceUri.toString();
             newSource.persist();
             return newSource;
         });
         String etag = storedSource.etag;
+        final String previousDataPath = storedSource.dataPath;
 
         // here we need to go about looking for the file
         if (sourceUri.getScheme() == null) {
@@ -107,16 +108,38 @@ public abstract class FileSourceHandler implements SourceHandler {
                     logger.debugf("%s cached at %s", sourceUri, storedSource.dataPath);
                 }
             }
+        }
 
-            if (response.isDownloaded()) {
-                // save hash
-                Optional<String> hash = ShaUtil.hash(PathUtil.real(storedSource.dataPath));
-                hash.ifPresent(s -> storedSource.hash = s);
+        // get hashes
+        final String newHash = ShaUtil.hash(PathUtil.real(storedSource.dataPath)).orElse("");
+        final String newContentHash = ShaUtil.hash(PathUtil.real(storedSource.dataPath), storedSource.compression).orElse("");
+
+        // the file should be considered updated when the file hash has changed or the content hash has changed (and does not match the hash)
+        boolean updated = newHash.equalsIgnoreCase(storedSource.contentHash)
+                     || (!newContentHash.isEmpty() && !newContentHash.equalsIgnoreCase(newHash) && !newContentHash.equalsIgnoreCase(storedSource.contentHash));
+
+        // if the current data path exists and is not the same as the old path then we
+        // need to clean up the old data file if we can.
+        if (previousDataPath != null && !previousDataPath.isEmpty() && !previousDataPath.equalsIgnoreCase(storedSource.dataPath)) {
+            try {
+                Files.deleteIfExists(PathUtil.real(previousDataPath));
+            } catch (IOException e) {
+                logger.errorf("The source %s has changed but could not delete previous data file %s", source, previousDataPath);
             }
+        }
+
+        if (updated) {
+            // save the hashes
+            storedSource.hash = newHash;
+            storedSource.contentHash = newContentHash;
+
+            // it has updated so change the version
+            storedSource.version++;
         }
 
         // ensure source is persisted at the end
         storedSource.persist();
+
         if (storedSource.id == null) {
            final Optional<StoredSource> optionalStoredSource = StoredSource.findByIdOptional(storedSource.uri);
            if (optionalStoredSource.isPresent()) {

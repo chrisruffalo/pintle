@@ -62,25 +62,13 @@ public class DownloadUtil {
             String cacheName = null;
             if (response.headers().contains("etag")) {
                 String newEtag = response.headers().get("etag");
-                String cacheNameEtag = newEtag;
-                if (cacheNameEtag.toLowerCase().startsWith("w/")) {
-                    cacheNameEtag = cacheNameEtag.substring(2);
-                }
-                if (cacheNameEtag.startsWith("\"")) {
-                    cacheNameEtag = cacheNameEtag.substring(1);
-                }
-                if (cacheNameEtag.endsWith("\"")) {
-                    cacheNameEtag = cacheNameEtag.substring(0, cacheNameEtag.length() - 1);
-                }
                 dr.setEtag(newEtag);
-                cacheName = cacheNameEtag;
                 LOGGER.debugf("download response with etag value: %s", newEtag);
-            } else {
-                // this is pretty cursed but it should allow us to send an etag with the same
-                // logic if the download already exists
-                cacheName = UUID.randomUUID().toString().replace("-", "");
-                dr.setEtag(cacheName);
             }
+
+            // this is pretty cursed but it should allow us to send an etag with the same
+            // logic if the download already exists
+            cacheName = UUID.randomUUID().toString().replace("-", "");
 
             if (response.headers().contains("Cache-control")) {
                 final String cacheControl = response.headers().get("cache-control");

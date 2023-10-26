@@ -23,6 +23,13 @@ public class StoredSource extends PanacheEntityBase {
     public String uri;
 
     /**
+     * The version of the source/resource. This is
+     * not a JPA version but is managed by the application
+     */
+    @Column(nullable = false)
+    public long version = 0;
+
+    /**
      * Path, relative to the cache directory,
      * that the actual file is stored/saved
      */
@@ -36,9 +43,25 @@ public class StoredSource extends PanacheEntityBase {
     @Column
     public String etag;
 
+    /**
+     * The hash of the file itself.
+     */
     @Column
     public String hash;
 
+    /**
+     * The hash of the contents of the file. If the
+     * file is compressed or contained this would
+     * be different from the file hash. Otherwise
+     * expect them to be the same value.
+     */
+    @Column(name = "content_hash")
+    public String contentHash;
+
+    /**
+     * The compression scheme, usually from the
+     * http download, like "gzip".
+     */
     @Column
     public String compression;
 

@@ -9,8 +9,11 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.Optional;
+import java.util.zip.GZIPInputStream;
 
 public class ShaUtil {
+
+    private static final int BUFFER_SIZE = 16 * 1024; //16k
 
     private static final Logger LOGGER = Logger.getLogger(ShaUtil.class);
 
@@ -29,6 +32,49 @@ public class ShaUtil {
         if (!Files.isRegularFile(toFile)) {
             return Optional.empty();
         }
+        final MessageDigest messageDigest = getMessageDigest();
+        try (
+            final InputStream reader = Files.newInputStream(toFile);
+        ) {
+            hash(messageDigest, reader);
+        } catch (IOException e) {
+            return Optional.empty();
+        }
+        return Optional.of(HexFormat.of().formatHex(messageDigest.digest()));
+    }
+
+    public static Optional<String> hash(final Path toFile, final String compressionFormat) {
+        if (!Files.exists(toFile)) {
+            return Optional.empty();
+        }
+        if (!Files.isRegularFile(toFile)) {
+            return Optional.empty();
+        }
+        if (compressionFormat == null || compressionFormat.isEmpty()) {
+            return hash(toFile);
+        }
+
+        final MessageDigest messageDigest = getMessageDigest();
+
+        try (
+            final InputStream reader = Files.newInputStream(toFile);
+            final InputStream decompressed = getDecompressionStream(reader, compressionFormat);
+        ) {
+            hash(messageDigest, decompressed);
+        } catch (IOException e) {
+            return Optional.empty();
+        }
+        return Optional.of(HexFormat.of().formatHex(messageDigest.digest()));
+    }
+
+    private static void hash(final MessageDigest messageDigest, final InputStream source) throws IOException {
+        byte[] buffer = new byte[BUFFER_SIZE];
+        while(source.read(buffer) >= 0) {
+            messageDigest.update(buffer);
+        }
+    }
+
+    private static MessageDigest getMessageDigest() {
         MessageDigest messageDigest = null;
         for (String alg : ALGS) {
             try {
@@ -42,17 +88,18 @@ public class ShaUtil {
         if (messageDigest == null) {
             throw new RuntimeException(String.format("Could not find a valid message digest algorithm among %s", String.join(",", ALGS)));
         }
-        byte[] buffer = new byte[8196];
-        try (
-            final InputStream reader = Files.newInputStream(toFile);
-        ) {
-            while(reader.read(buffer) >= 0) {
-                messageDigest.update(buffer);
-            }
-        } catch (IOException e) {
-            return Optional.empty();
+        return messageDigest;
+    }
+
+    private static InputStream getDecompressionStream(final InputStream source, final String compressionFormat) throws IOException {
+        InputStream target = null;
+        if ("gzip".equalsIgnoreCase(compressionFormat)) {
+            target = new GZIPInputStream(source);
         }
-        return Optional.of(HexFormat.of().formatHex(messageDigest.digest()));
+        if (target == null) {
+            return source;
+        }
+        return target;
     }
 
 }
