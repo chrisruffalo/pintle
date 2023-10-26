@@ -25,10 +25,30 @@ public class GroupController {
 
     private static final String DEFAULT_GROUP_NAME = "default";
 
+    private static final Group DEFAULT = new Group() {
+        @Override
+        public String name() {
+            return DEFAULT_GROUP_NAME;
+        }
+
+        @Override
+        public Optional<List<String>> resolvers() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<List<String>> lists() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<List<Matcher>> matchers() {
+            return Optional.empty();
+        }
+    };
+
     @Inject
     ConfigProducer configProducer;
-
-    PintleConfig config;
 
     @Inject
     EventBus bus;
@@ -36,51 +56,27 @@ public class GroupController {
     @Inject
     Logger logger;
 
-    private Group defaultGroup = null;
-    private final Map<String, Group> groups = new HashMap<>();
-
     @ConsumeEvent(Bus.CONFIG_UPDATE_GROUPS)
     public void configure(ConfigUpdate event) {
-        config = configProducer.get(event.getId());
-        // go through the config if available
-        if (config.groups().isPresent() || !config.groups().get().isEmpty()) {
-            for (final Group group : config.groups().get()) {
-                groups.put(group.name(), group);
-            }
-        }
 
-        // create the default group and ensure it is added to the
-        // map if it is null
-        defaultGroup = groups.computeIfAbsent(DEFAULT_GROUP_NAME, k -> createDefaultGroup());
-
-        // now that we know we have a default group we can go back through
-        // the list of groups and establish them all and build the matcher
-        // tree for each one
-
-    }
-
-    /**
-     * Get a group by name. If no group is given return the default.
-     *
-     * @param name of the group to get
-     * @return the configured group if found, the default group otherwise
-     */
-    public Group getGroupByName(final String name) {
-        return groups.getOrDefault(name, defaultGroup);
     }
 
     @WithSpan("assign to group")
     @ConsumeEvent(Bus.ASSIGN_GROUP)
     @RunOnVirtualThread
     public void assignToGroup(QueryContext context) {
-        context.setGroup(defaultGroup);
+        final PintleConfig config = configProducer.get(context.getConfigId());
+        context.setGroup(DEFAULT);
 
         // get the first matching group. first match wins.
         if (config.groups().isPresent() && !config.groups().get().isEmpty()) {
             for (final Group group : config.groups().get()) {
+                // use the default group configured inside the list of groups
                 if (DEFAULT_GROUP_NAME.equals(group.name())) {
+                    context.setGroup(group);
                     continue;
                 }
+                // otherwise match the first matching group
                 if(group.matches(context)) {
                     context.setGroup(group);
                     break;
@@ -91,29 +87,4 @@ public class GroupController {
         logger.debugf("[%s] mapped query to group '%s'", context.getTraceId(), context.getGroup().name());
         bus.send(Bus.CHECK_CACHE, context);
     }
-
-    private Group createDefaultGroup() {
-        return new Group() {
-            @Override
-            public String name() {
-                return DEFAULT_GROUP_NAME;
-            }
-
-            @Override
-            public Optional<List<String>> resolvers() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<List<String>> lists() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<List<Matcher>> matchers() {
-                return Optional.empty();
-            }
-        };
-    }
-
 }

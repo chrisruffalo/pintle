@@ -185,6 +185,10 @@ public class PintleResolver implements Resolver {
         this.retries = resolvers.size();
     }
 
+    public io.github.chrisruffalo.pintle.config.Resolver config(){
+        return this.resolverConfig;
+    }
+
     @Override
     public void setPort(int port) {
         for (PintleResolver.ResolverEntry re : resolvers) {

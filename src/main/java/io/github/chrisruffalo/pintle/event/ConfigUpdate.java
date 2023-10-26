@@ -1,5 +1,6 @@
 package io.github.chrisruffalo.pintle.event;
 
+import io.github.chrisruffalo.pintle.config.diff.Diff;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 /**
@@ -15,14 +16,17 @@ public class ConfigUpdate {
      */
     private final String id;
 
+    private final Diff diff;
+
     /**
      * True when this is the initial load
      */
     private final boolean initial;
 
-    public ConfigUpdate(String id, boolean initial) {
+    public ConfigUpdate(String id, boolean initial, Diff diff) {
         this.id = id;
         this.initial = initial;
+        this.diff = diff;
     }
 
     public String getId() {
@@ -31,5 +35,9 @@ public class ConfigUpdate {
 
     public boolean isInitial() {
         return initial;
+    }
+
+    public Diff getDiff() {
+        return diff;
     }
 }

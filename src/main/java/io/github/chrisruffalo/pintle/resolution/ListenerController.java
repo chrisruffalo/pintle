@@ -17,6 +17,7 @@ import io.vertx.core.datagram.DatagramSocket;
 import io.vertx.core.datagram.DatagramSocketOptions;
 import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetServerOptions;
+import io.vertx.core.spi.metrics.TCPMetrics;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
@@ -39,16 +40,16 @@ public class ListenerController extends AbstractListenerController {
         return logger;
     }
 
-    private ListenerHolder startServer(final Listener config) {
+    private ListenerHolder startServer(final String configId, final Listener config) {
         if(ServiceType.TCP.equals(config.type())) {
-            return startTcpServer(config);
+            return startTcpServer(configId, config);
         } else if (ServiceType.UDP.equals(config.type())) {
-            return startUdpServer(config);
+            return startUdpServer(configId, config);
         }
         return null;
     }
 
-    private ListenerHolder startTcpServer(final Listener config) {
+    private ListenerHolder startTcpServer(final String configId, final Listener config) {
         final int port = config.port().orElse(SERVER_PORT);
 
         final NetServerOptions options = new NetServerOptions()
@@ -80,11 +81,13 @@ public class ListenerController extends AbstractListenerController {
                     final Message message = new Message(questionBytes);
                     final QueryContext context = new QueryContext(traceId, span, responder, message);
                     context.setListenerName(config.name());
+                    context.setConfigId(configId);
                     // send event, wait for result
                     eventBus.send(Bus.ASSIGN_GROUP, context);
                 } catch (Exception ex) {
                     final QueryContext context = new QueryContext(traceId, span, responder, ex);
                     context.setListenerName(config.name());
+                    context.setConfigId(configId);
                     // send error to be handled
                     eventBus.send(Bus.HANDLE_ERROR, context);
                 }
@@ -104,7 +107,7 @@ public class ListenerController extends AbstractListenerController {
         return new TcpListenerHolder(config, tcpServer);
     }
 
-    private ListenerHolder startUdpServer(final Listener config) {
+    private ListenerHolder startUdpServer(final String configId, final Listener config) {
         final DatagramSocket udpServer = vertx.createDatagramSocket(new DatagramSocketOptions().setIpV6(false).setReuseAddress(true));
         int port = config.port().orElse(SERVER_PORT);
         udpServer.listen(port, SERVER_HOST, asyncResult -> {
@@ -121,11 +124,13 @@ public class ListenerController extends AbstractListenerController {
                     try {
                         final Message message = new Message(questionBytes);
                         final QueryContext context = new QueryContext(traceId, span, responder, message);
+                        context.setConfigId(configId);
                         context.setListenerName(config.name());
                         // send event, wait for result
                         eventBus.send(Bus.ASSIGN_GROUP, context);
                     } catch (Exception ex) {
                         final QueryContext context = new QueryContext(traceId, span, responder, ex);
+                        context.setConfigId(configId);
                         context.setListenerName(config.name());
                         // send error to be handled
                         eventBus.send(Bus.HANDLE_ERROR, context);
@@ -151,7 +156,7 @@ public class ListenerController extends AbstractListenerController {
         }
         List<Listener> listeners = config.listeners().get();
         for (final Listener listener : listeners) {
-            this.listeners.add(startServer(listener));
+            this.listeners.add(startServer(event.getId(), listener));
         }
     }
 }

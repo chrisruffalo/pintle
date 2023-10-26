@@ -12,7 +12,9 @@ import io.github.chrisruffalo.pintle.resolution.list.SourceHandlerProvider;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
+import io.vertx.core.Future;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.Message;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -20,9 +22,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 @ApplicationScoped
 public class ListController {
@@ -49,6 +50,10 @@ public class ListController {
 
     private final Map<String, ActionList> listsByName = new HashMap<>();
 
+    private final Map<String, Set<String>> pendingLists = new HashMap<>();
+
+    private final Map<String, ConfigUpdate> cachedUpdate = new HashMap<>();
+
     @ConsumeEvent(value = Bus.CONFIG_UPDATE_LISTS, ordered = true)
     public void configure(ConfigUpdate event) {
         if (!event.isInitial()) {
@@ -56,13 +61,42 @@ public class ListController {
         }
         currentConfig = configProducer.get(event.getId());
         listsByName.clear();
+        pendingLists.put(event.getId(), new HashSet<>());
+        if (event.getDiff().changed("listeners")) {
+            this.cachedUpdate.put(event.getId(), event);
+        }
+
         if (currentConfig.lists().isPresent()) {
             for (final ActionList list : currentConfig.lists().get()) {
                 listsByName.put(list.name(), list);
                 final ListUpdate listUpdate = new ListUpdate();
                 listUpdate.setListName(list.name());
                 listUpdate.setConfigId(event.getId());
+                pendingLists.get(event.getId()).add(list.name());
                 bus.send(Bus.CONFIG_UPDATE_SINGLE_LIST, listUpdate);
+            }
+        }
+    }
+
+    @Blocking
+    @ConsumeEvent(value = Bus.CONFIG_SINGLE_LIST_COMPLETE, ordered = true)
+    void listComplete(ListUpdateComplete listUpdateComplete) {
+        final String id = listUpdateComplete.getConfigId();
+        final String name = listUpdateComplete.getListName();
+        logger.debugf("[%s] done processing", listUpdateComplete.getListName());
+        final Set<String> awaitingCompletionLists = this.pendingLists.get(id);
+        awaitingCompletionLists.remove(name);
+        if (awaitingCompletionLists.isEmpty()) {
+            logger.infof("all pending lists have completed processing");
+            this.pendingLists.remove(id);
+
+            // notify listeners they need to implement the current configuration
+            // if this configuration has changes for the listener after the lists
+            if (cachedUpdate.containsKey(id)) {
+                final ConfigUpdate update = cachedUpdate.remove(id);
+                if (update != null) {
+                    bus.send(Bus.CONFIG_UPDATE_LISTENERS, update);
+                }
             }
         }
     }
@@ -72,14 +106,13 @@ public class ListController {
      *
      * @param listUpdate
      */
-    @Blocking
-    @ConsumeEvent(value = Bus.CONFIG_UPDATE_SINGLE_LIST, ordered = true)
-    @Transactional
-    void configSource(ListUpdate listUpdate) {
+    @ConsumeEvent(value = Bus.CONFIG_UPDATE_SINGLE_LIST)
+    @RunOnVirtualThread
+    boolean configSource(ListUpdate listUpdate) {
         final ActionList list = listsByName.get(listUpdate.getListName());
         // not sure how this would happen but we like to be super defensive
         if (list == null) {
-            return;
+            return false;
         }
         logger.debugf("processing list %s", listUpdate.getListName());
         final StoredList stored = StoredList.byName(listUpdate.getListName()).orElseGet(() -> {
@@ -92,14 +125,31 @@ public class ListController {
         stored.lastConfiguration = listUpdate.getConfigId();
 
         stored.persist();
+        final List<Future<Message<Boolean>>> waitingResponses = new ArrayList<>();
+
+        logger.debugf("[%s] starting processing", list.name());
         list.sources().forEach(source -> {
             final SourceUpdate sourceUpdate = new SourceUpdate();
             sourceUpdate.setSource(source);
             sourceUpdate.setConfigId(listUpdate.getConfigId());
             sourceUpdate.setListName(listUpdate.getListName());
             sourceUpdate.setListId(stored.id);
-            bus.send(Bus.CONFIG_LIST_UPDATE_SOURCE, sourceUpdate);
+            waitingResponses.add(bus.request(Bus.CONFIG_LIST_UPDATE_SOURCE, sourceUpdate));
         });
+
+        // wait for responses
+        waitingResponses.forEach(r -> {
+            try {
+                r.toCompletionStage().toCompletableFuture().get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        // send event that marks list as complete
+        bus.send(Bus.CONFIG_SINGLE_LIST_COMPLETE, new ListUpdateComplete(listUpdate.getConfigId(), list.name()));
+
+        return true;
     }
 
 
@@ -108,37 +158,50 @@ public class ListController {
      *
      * @param sourceUpdate
      */
-
     @ConsumeEvent(value = Bus.CONFIG_LIST_UPDATE_SOURCE)
     @RunOnVirtualThread
-    void configSource(SourceUpdate sourceUpdate) {
+    boolean configSource(SourceUpdate sourceUpdate) {
         final ActionList list = listsByName.get(sourceUpdate.getListName());
         final PintleConfig pintleConfig = configProducer.get(sourceUpdate.getConfigId());
         final Optional<SourceHandler> processorOptional = sourceHandlerProvider.get(list);
         if (processorOptional.isEmpty()) {
-            return;
+            return false;
         }
 
         final Optional<StoredSource> storedSourceOptional = processorOptional.get().load(sourceUpdate.getListId(), pintleConfig, list, sourceUpdate.getSource());
         if (storedSourceOptional.isEmpty()) {
-            return;
+            return false;
         }
 
         // send for processing
-        bus.send(Bus.CONFIG_LIST_PROCESS_SOURCE, new ProcessSource(sourceUpdate.getListId(), list, storedSourceOptional.get()));
+        try {
+            bus.request(Bus.CONFIG_LIST_PROCESS_SOURCE, new ProcessSource(sourceUpdate.getListId(), list, storedSourceOptional.get()))
+                    .toCompletionStage().toCompletableFuture().get();
+            return true;
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @ConsumeEvent(value = Bus.CONFIG_LIST_PROCESS_SOURCE)
     @RunOnVirtualThread
-    void processSource(ProcessSource processSourceEvent) {
+    boolean processSource(ProcessSource processSourceEvent) {
         final StoredSource source = processSourceEvent.getSource();
         final Optional<SourceHandler> processorOptional = sourceHandlerProvider.get(processSourceEvent.getConfig());
         if (processorOptional.isEmpty()) {
             // todo: log
-            return;
+            return false;
         }
+
         long loaded = processorOptional.get().process(processSourceEvent.getStoredListId(), processSourceEvent.getConfig(), source);
         logger.debugf("loaded %d items", loaded);
+
+        // todo: send source updated with version
+        //       so that the controller can start
+        //       using the newest version of that
+        //       list
+
+        return true;
     }
 
 }

@@ -1,5 +1,7 @@
 package io.github.chrisruffalo.pintle.config.diff;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -11,6 +13,7 @@ import java.util.stream.IntStream;
  * container can be inspected to see if changes
  * in the object tree need to be responded to.
  */
+@RegisterForReflection
 public class Diff {
 
     private static final String SEP = ".";

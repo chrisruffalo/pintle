@@ -112,11 +112,14 @@ public class ConfigProducer {
         // to get changes for the startup load where the
         // original will be null
         final Diff diffNode = Diff.compare(current, original);
-        final ConfigUpdate event = new ConfigUpdate(id, configurations.size() == 1);
+        final ConfigUpdate event = new ConfigUpdate(id, configurations.size() == 1, diffNode);
 
         // send events
         if(diffNode.changed()) {
-            if (diffNode.changed("listeners")) {
+            // lists will update listeners if necessary
+            if (diffNode.changed("lists")) {
+                bus.send(Bus.CONFIG_UPDATE_LISTS, event);
+            } else if (diffNode.changed("listeners")) {
                 bus.send(Bus.CONFIG_UPDATE_LISTENERS, event);
             }
             if (diffNode.changed("mdns")) {
@@ -130,9 +133,6 @@ public class ConfigProducer {
             }
             if (diffNode.changed("log")) {
                 bus.send(Bus.CONFIG_UPDATE_LOGGING, event);
-            }
-            if (diffNode.changed("lists")) {
-                bus.send(Bus.CONFIG_UPDATE_LISTS, event);
             }
         }
     }

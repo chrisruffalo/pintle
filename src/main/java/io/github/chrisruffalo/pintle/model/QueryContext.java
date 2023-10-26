@@ -17,24 +17,71 @@ import java.util.List;
 @RegisterForReflection
 public class QueryContext {
 
+    /**
+     * Unique identifier for every request in the
+     * system that ties back to opentelemetry
+     */
     private final String traceId;
 
+    /**
+     * The configuration id that was current at the time
+     * that the request was serviced. Used mainly in the
+     * blocking step to ensure that the mappings/groups
+     * that were active at the time the listener
+     * handled the query are the ones that are applied
+     */
+    private String configId;
+
+    /**
+     * The first available moment that the application
+     * started handling the request.
+     */
     private final ZonedDateTime started;
 
+    /**
+     * The time that the request was responded to, meaning
+     * after the future completed.
+     */
     private ZonedDateTime responded;
 
+    /**
+     * The class that encapsulates how the client is responded
+     * to.
+     */
     private final Responder responder;
 
+    /**
+     * The DNS message that represents the query sent to the
+     * listener.
+     */
     private Message question;
 
+    /**
+     * The DNS message that serves as the response that will be
+     * sent back out the responder.
+     */
     private Message answer;
 
+    /**
+     * Any exceptions collected during the lifetime of the context
+     */
     private final List<Throwable> exceptions = new LinkedList<>();
 
+    /**
+     * The enumerated type that represents the end-state/result of
+     * the resolution.
+     */
     private QueryResult result;
 
+    /**
+     * The span created at the beginning and tracked with opentelemtry
+     * through the execution of the query.
+     */
     private Span span;
 
+    /**
+     * The group that matched first to the query.
+     */
     private Group group;
 
     /**
@@ -43,6 +90,9 @@ public class QueryContext {
      */
     private boolean cached;
 
+    /**
+     * The name of the listener that the query was ingested through
+     */
     private String listenerName;
 
     QueryContext(String traceId, Responder responder) {
@@ -158,5 +208,13 @@ public class QueryContext {
 
     public void setGroup(Group group) {
         this.group = group;
+    }
+
+    public String getConfigId() {
+        return configId;
+    }
+
+    public void setConfigId(String configId) {
+        this.configId = configId;
     }
 }

@@ -73,6 +73,6 @@ public class Bus {
     public static final String CONFIG_LIST_UPDATE_SOURCE = "pintle-config-update-source";
     public static final String CONFIG_LIST_PROCESS_SOURCE = "pintle-config-process-source";
     public static final String CONFIG_UPDATE_RESOLVERS = "pintle-config-update-resolvers";
-
+    public static final String CONFIG_SINGLE_LIST_COMPLETE = "pintle-config-complete-single-list";
 }
 

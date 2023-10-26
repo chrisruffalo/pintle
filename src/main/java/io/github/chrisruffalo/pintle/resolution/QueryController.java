@@ -72,6 +72,7 @@ public class QueryController {
                 eventBus.send(Bus.RESPOND, context);
                 return CompletableFuture.completedStage(response);
             }
+            logger.debugf("using resolver %s", resolver.get().config().name());
             return resolver.get().sendAsync(question).whenCompleteAsync((resolutionAnswer, resolutionException) -> {
                 if(resolutionException != null) {
                     context.getExceptions().add(resolutionException);
