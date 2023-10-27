@@ -82,7 +82,7 @@ public class QueryContext {
     /**
      * The group that matched first to the query.
      */
-    private Group group;
+    private final List<Group> groups = new LinkedList<>();
 
     /**
      * When true sets that the source was a cached entry. Cached entries
@@ -202,12 +202,8 @@ public class QueryContext {
         this.span = span;
     }
 
-    public Group getGroup() {
-        return group;
-    }
-
-    public void setGroup(Group group) {
-        this.group = group;
+    public List<Group> getGroups() {
+        return groups;
     }
 
     public String getConfigId() {

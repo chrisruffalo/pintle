@@ -31,15 +31,48 @@ public interface PintleConfig extends Diffable<PintleConfig> {
 
     Log log();
 
+    @Override
+    default PintleConfig unwrap() {
+        return this;
+    }
+
     Mdns mdns();
 
     Optional<List<Group>> groups();
 
+    default Optional<Group> group(final String name) {
+        if (groups().isEmpty() || name == null || name.isEmpty()) {
+            return Optional.empty();
+        }
+        return groups().get().stream().filter(g -> name.equals(g.name())).findFirst();
+    }
+
     Optional<List<Listener>> listeners();
+
+    default Optional<Listener> listener(final String name) {
+        if (listeners().isEmpty() || name == null || name.isEmpty()) {
+            return Optional.empty();
+        }
+        return listeners().get().stream().filter(l -> name.equals(l.name())).findFirst();
+    }
 
     Optional<List<ActionList>> lists();
 
+    default Optional<ActionList> list(final String name) {
+        if (lists().isEmpty() || name == null || name.isEmpty()) {
+            return Optional.empty();
+        }
+        return lists().get().stream().filter(al -> name.equals(al.name())).findFirst();
+    }
+
     Optional<List<Resolver>> resolvers();
+
+    default Optional<Resolver> resolver(final String name) {
+        if (resolvers().isEmpty() || name == null || name.isEmpty()) {
+            return Optional.empty();
+        }
+        return resolvers().get().stream().filter(r -> name.equals(r.name())).findFirst();
+    }
 
     @Override
     default Diff diff(PintleConfig other) {

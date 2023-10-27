@@ -4,16 +4,9 @@ import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.persistence.*;
-import jakarta.transaction.Transactional;
-import jdk.jfr.Name;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Entity(name = "line")
 @Table(name = "line")

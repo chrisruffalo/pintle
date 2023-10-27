@@ -7,6 +7,8 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 @RegisterForReflection
 public class ProcessSource {
 
+    private String configId;
+
     private ActionList config;
 
     private long storedListId;
@@ -17,10 +19,15 @@ public class ProcessSource {
 
     }
 
-    public ProcessSource(final long storedListId, final ActionList config, final StoredSource storedSource) {
+    public ProcessSource(final String configId, final long storedListId, final ActionList config, final StoredSource storedSource) {
+        this.configId = configId;
         this.storedListId = storedListId;
         this.config = config;
         this.source = storedSource;
+    }
+
+    public String getConfigId() {
+        return configId;
     }
 
     public ActionList getConfig() {

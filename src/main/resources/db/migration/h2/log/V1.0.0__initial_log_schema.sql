@@ -11,9 +11,9 @@ create table log_item (
     type smallint,
 
     -- these codes do not need values over 128
-    rcode tinyint check (result between 0 and 23),
-    service tinyint check (result between 0 and 2),
-    result tinyint check (result between 0 and 3),
+    rcode tinyint check (result between 0 and 25),
+    service tinyint check (result between 0 and 3),
+    result tinyint check (result between 0 and 5),
 
     -- the time in ms that have elapsed since the start time, practically speaking this won't
     -- be longer than the timeout of ~5000. smallint can store enough ms to cover 30s. in

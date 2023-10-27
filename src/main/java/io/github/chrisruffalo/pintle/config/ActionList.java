@@ -30,7 +30,13 @@ public interface ActionList extends Named, Diffable<ActionList>, NamedComparable
          * response back to the client. No upstream resolvers
          * should be queried.
          */
-        BLOCK
+        BLOCK,
+
+        /**
+         * Logged separately or distinctly with a WARNING and easily
+         * searchable but they are allowed to resolve.
+         */
+        WARN
     }
 
     /**

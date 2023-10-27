@@ -15,9 +15,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -66,25 +64,31 @@ public class GroupController {
     @RunOnVirtualThread
     public void assignToGroup(QueryContext context) {
         final PintleConfig config = configProducer.get(context.getConfigId());
-        context.setGroup(DEFAULT);
+        Group defaultGroup = DEFAULT;
+        boolean wantsDefault = true;
 
         // get the first matching group. first match wins.
         if (config.groups().isPresent() && !config.groups().get().isEmpty()) {
             for (final Group group : config.groups().get()) {
                 // use the default group configured inside the list of groups
                 if (DEFAULT_GROUP_NAME.equals(group.name())) {
-                    context.setGroup(group);
+                    defaultGroup = group;
+                    if(defaultGroup.matchers().isPresent() && !defaultGroup.matchers().get().isEmpty()) {
+                        wantsDefault = defaultGroup.matches(context);
+                    }
                     continue;
                 }
                 // otherwise match the first matching group
                 if(group.matches(context)) {
-                    context.setGroup(group);
+                    context.getGroups().add(group);
                     break;
                 }
             }
         }
-
-        logger.debugf("[%s] mapped query to group '%s'", context.getTraceId(), context.getGroup().name());
-        bus.send(Bus.CHECK_CACHE, context);
+        // the default group is added last if it matches or if it never had matchers
+        if (wantsDefault) {
+            context.getGroups().add(defaultGroup);
+        }
+        bus.send(Bus.HANDLE_ACTION_LISTS, context);
     }
 }

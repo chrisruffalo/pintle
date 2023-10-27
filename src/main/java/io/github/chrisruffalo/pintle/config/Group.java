@@ -14,6 +14,13 @@ import java.util.Set;
 public interface Group extends Named, Diffable<Group>, NamedComparable<Group> {
 
     /**
+     * The default group's name is always default and it
+     * always matches but it is put at the end of the list
+     * if it does
+     */
+    String DEFAULT_GROUP_NAME = "default";
+
+    /**
      * A list of resolvers, by name, that clients
      * and queries matched to this group should
      * use to resolve. Generally these resolvers

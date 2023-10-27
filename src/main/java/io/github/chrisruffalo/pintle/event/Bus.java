@@ -61,6 +61,8 @@ public class Bus {
      */
     public static final String ASSIGN_GROUP = "pintle-assign-group";
 
+    public static final String HANDLE_ACTION_LISTS = "pitnle-handle-action-lists";
+
     /**
      * Configuration updates
      */

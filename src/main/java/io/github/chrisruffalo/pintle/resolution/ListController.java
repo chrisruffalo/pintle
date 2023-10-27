@@ -21,8 +21,10 @@ import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import java.beans.Transient;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 @ApplicationScoped
@@ -54,6 +56,8 @@ public class ListController {
 
     private final Map<String, ConfigUpdate> cachedUpdate = new HashMap<>();
 
+    private final Map<String, Map<Long, Long>> configIdToSourceVersion = new ConcurrentHashMap<>();
+
     @ConsumeEvent(value = Bus.CONFIG_UPDATE_LISTS, ordered = true)
     public void configure(ConfigUpdate event) {
         if (!event.isInitial()) {
@@ -65,6 +69,9 @@ public class ListController {
         if (event.getDiff().changed("listeners")) {
             this.cachedUpdate.put(event.getId(), event);
         }
+
+        // create new holder in map
+        configIdToSourceVersion.put(event.getId(), new ConcurrentHashMap<>());
 
         if (currentConfig.lists().isPresent()) {
             for (final ActionList list : currentConfig.lists().get()) {
@@ -108,6 +115,7 @@ public class ListController {
      */
     @ConsumeEvent(value = Bus.CONFIG_UPDATE_SINGLE_LIST)
     @RunOnVirtualThread
+    @Transactional
     boolean configSource(ListUpdate listUpdate) {
         final ActionList list = listsByName.get(listUpdate.getListName());
         // not sure how this would happen but we like to be super defensive
@@ -158,6 +166,7 @@ public class ListController {
      *
      * @param sourceUpdate
      */
+    @Transactional
     @ConsumeEvent(value = Bus.CONFIG_LIST_UPDATE_SOURCE)
     @RunOnVirtualThread
     boolean configSource(SourceUpdate sourceUpdate) {
@@ -175,7 +184,8 @@ public class ListController {
 
         // send for processing
         try {
-            bus.request(Bus.CONFIG_LIST_PROCESS_SOURCE, new ProcessSource(sourceUpdate.getListId(), list, storedSourceOptional.get()))
+            final ProcessSource processSource = new ProcessSource(sourceUpdate.getConfigId(), sourceUpdate.getListId(), list, storedSourceOptional.get());
+            bus.request(Bus.CONFIG_LIST_PROCESS_SOURCE, processSource)
                     .toCompletionStage().toCompletableFuture().get();
             return true;
         } catch (InterruptedException | ExecutionException e) {
@@ -185,6 +195,7 @@ public class ListController {
 
     @ConsumeEvent(value = Bus.CONFIG_LIST_PROCESS_SOURCE)
     @RunOnVirtualThread
+    @Transactional
     boolean processSource(ProcessSource processSourceEvent) {
         final StoredSource source = processSourceEvent.getSource();
         final Optional<SourceHandler> processorOptional = sourceHandlerProvider.get(processSourceEvent.getConfig());
@@ -196,12 +207,19 @@ public class ListController {
         long loaded = processorOptional.get().process(processSourceEvent.getStoredListId(), processSourceEvent.getConfig(), source);
         logger.debugf("loaded %d items", loaded);
 
-        // todo: send source updated with version
-        //       so that the controller can start
-        //       using the newest version of that
-        //       list
+        // add source to version map
+        configIdToSourceVersion.get(processSourceEvent.getConfigId()).put(source.id, source.version);
 
         return true;
+    }
+
+    public long getSourceVersion(final String configId, final long sourceId) {
+        if (configIdToSourceVersion.containsKey(configId)) {
+            if (configIdToSourceVersion.get(configId).containsKey(sourceId)) {
+                return configIdToSourceVersion.get(configId).get(sourceId);
+            }
+        }
+        return 0L;
     }
 
 }

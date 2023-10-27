@@ -3,7 +3,6 @@ package io.github.chrisruffalo.pintle.config.resolver;
 import io.github.chrisruffalo.pintle.config.PintleConfig;
 import io.github.chrisruffalo.pintle.config.ResolverSourceType;
 import org.xbill.DNS.Resolver;
-import org.xbill.DNS.SimpleResolver;
 
 /**
  * This resolver source provides additional configuration over

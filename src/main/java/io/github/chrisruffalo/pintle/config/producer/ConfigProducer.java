@@ -4,6 +4,7 @@ import io.github.chrisruffalo.pintle.cmd.line.Args;
 import io.github.chrisruffalo.pintle.cmd.line.CommandLineRoot;
 import io.github.chrisruffalo.pintle.config.PintleConfig;
 import io.github.chrisruffalo.pintle.config.diff.Diff;
+import io.github.chrisruffalo.pintle.config.impl.PintleConfigContainer;
 import io.github.chrisruffalo.pintle.event.Bus;
 import io.github.chrisruffalo.pintle.event.ConfigUpdate;
 import io.github.chrisruffalo.pintle.util.PathUtil;
@@ -228,7 +229,7 @@ public class ConfigProducer {
                 .withMapping(PintleConfig.class)
                 .withSources(new YamlConfigSource(pathToConfigFile.toUri().toURL()))
                 ;
-        return builder.build().getConfigMapping(PintleConfig.class);
+        return new PintleConfigContainer(builder.build().getConfigMapping(PintleConfig.class));
     }
 
 }

@@ -34,7 +34,7 @@ public class NameUtil {
         if (stringified.endsWith(".")) {
             return stringified;
         }
-        return stringified + ".";
+        return (stringified + ".").toLowerCase();
     }
 
     /**
@@ -67,7 +67,7 @@ public class NameUtil {
             return ".";
         }
 
-        final Optional<Name> parsed = parse(name);
+        final Optional<Name> parsed = parse(name.toLowerCase());
         return string(parsed.orElse(null));
     }
 

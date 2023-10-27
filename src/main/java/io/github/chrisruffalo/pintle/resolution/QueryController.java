@@ -1,5 +1,6 @@
 package io.github.chrisruffalo.pintle.resolution;
 
+import io.github.chrisruffalo.pintle.config.Group;
 import io.github.chrisruffalo.pintle.event.Bus;
 import io.github.chrisruffalo.pintle.model.QueryContext;
 import io.github.chrisruffalo.pintle.model.QueryResult;
@@ -50,41 +51,43 @@ public class QueryController {
             return CompletableFuture.completedStage(response);
         } else {
             logger.debugf("resolving operation: %s", opcode);
-            final List<PintleResolver> resolversForGroup = resolverHandler.get(context.getGroup());
-            // if the resolver is null it triggers an NXDOMAIN
-            if (resolversForGroup == null) {
-                logger.warnf("the group '%s' did not have any resolvers, returning NXDOMAIN", context.getGroup().name());
-                final Message response = new Message(id);
-                response.getHeader().setRcode(Rcode.NXDOMAIN);
-                response.getHeader().setFlag(Flags.QR);
-                eventBus.send(Bus.RESPOND, context);
-                return CompletableFuture.completedStage(response);
-            }
 
-            // find the first resolver available for the candidate domain
-            final Optional<PintleResolver> resolver = resolversForGroup.stream().filter(pr -> pr.canServiceDomain(queryName)).findFirst();
-
-            if (resolver.isEmpty()) {
-                logger.warnf("the group '%s' did not have any resolvers that can resolve the domain '%s', returning NXDOMAIN", context.getGroup().name(), NameUtil.string(queryName));
-                final Message response = new Message(id);
-                response.getHeader().setRcode(Rcode.NXDOMAIN);
-                response.getHeader().setFlag(Flags.QR);
-                eventBus.send(Bus.RESPOND, context);
-                return CompletableFuture.completedStage(response);
-            }
-            logger.debugf("using resolver %s", resolver.get().config().name());
-            return resolver.get().sendAsync(question).whenCompleteAsync((resolutionAnswer, resolutionException) -> {
-                if(resolutionException != null) {
-                    context.getExceptions().add(resolutionException);
-                    context.setResult(QueryResult.ERROR);
-                    eventBus.send(Bus.HANDLE_ERROR, context);
-                } else {
-                    context.setResult(QueryResult.RESOLVED);
-                    context.setAnswer(resolutionAnswer);
-                    eventBus.send(Bus.RESPOND, context);
+            for(final Group group : context.getGroups()) {
+                final List<PintleResolver> resolversForGroup = resolverHandler.get(group);
+                // if the resolver is null it triggers an NXDOMAIN
+                if (resolversForGroup == null || resolversForGroup.isEmpty()) {
+                    logger.warnf("the group '%s' did not have any resolvers, skipping", group.name());
+                    continue;
                 }
-            });
+
+                // find the first resolver available for the candidate domain
+                final Optional<PintleResolver> resolver = resolversForGroup.stream().filter(pr -> pr.canServiceDomain(queryName)).findFirst();
+
+                if (resolver.isEmpty()) {
+                    logger.debugf("the group '%s' did not have any resolvers than can service the domain '%s', skipping", group.name(), NameUtil.string(queryName));
+                    continue;
+                }
+                logger.debugf("using resolver %s", resolver.get().config().name());
+                return resolver.get().sendAsync(question).whenCompleteAsync((resolutionAnswer, resolutionException) -> {
+                    if (resolutionException != null) {
+                        context.getExceptions().add(resolutionException);
+                        context.setResult(QueryResult.ERROR);
+                        eventBus.send(Bus.HANDLE_ERROR, context);
+                    } else {
+                        context.setResult(QueryResult.RESOLVED);
+                        context.setAnswer(resolutionAnswer);
+                        eventBus.send(Bus.RESPOND, context);
+                    }
+                });
+            }
         }
+
+        logger.warnf("groups assigned to the client [%s] could not resolve [%s]", context.getResponder().toClient(), queryName);
+        final Message response = new Message(id);
+        response.getHeader().setRcode(Rcode.NXDOMAIN);
+        response.getHeader().setFlag(Flags.QR);
+        eventBus.send(Bus.RESPOND, context);
+        return CompletableFuture.completedStage(response);
     }
 
 }

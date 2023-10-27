@@ -3,14 +3,11 @@ package io.github.chrisruffalo.pintle.resolution.list;
 import io.github.chrisruffalo.pintle.config.ActionList;
 import io.github.chrisruffalo.pintle.model.list.StoredLine;
 import io.github.chrisruffalo.pintle.model.list.StoredSource;
+import io.github.chrisruffalo.pintle.util.NameUtil;
 import io.github.chrisruffalo.pintle.util.PathUtil;
-import io.quarkus.hibernate.orm.panache.Panache;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.hibernate.Session;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -98,6 +95,7 @@ public class HostFileHandler extends FileSourceHandler {
                 if (hostname == null || hostname.isEmpty()) {
                     continue;
                 }
+                hostname = NameUtil.string(hostname);
 
                 final String key = hostname + "|" + resolveTo;
                 if (dontLoadDuplicates.contains(key)) {
