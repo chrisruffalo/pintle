@@ -2,12 +2,14 @@ package io.github.chrisruffalo.pintle.config.resolver;
 
 import io.github.chrisruffalo.pintle.config.PintleConfig;
 import io.github.chrisruffalo.pintle.config.ResolverSourceType;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import org.xbill.DNS.Resolver;
 
 /**
  * Provides configuration and construction for a DNS over HTTP (DoH)
  * source that uses HTTPS.
  */
+@RegisterForReflection
 public class HttpsResolverSource extends BaseResolverSource {
 
     @Override

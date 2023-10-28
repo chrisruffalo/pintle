@@ -4,12 +4,14 @@ import inet.ipaddr.IPAddress;
 import io.github.chrisruffalo.pintle.config.MatcherType;
 import io.github.chrisruffalo.pintle.model.QueryContext;
 import io.github.chrisruffalo.pintle.util.NetUtil;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 import java.util.Optional;
 
 /**
  * Matches against the client ip
  */
+@RegisterForReflection
 public class IpMatcher extends StringValuesMatcher {
 
     @Override

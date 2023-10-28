@@ -1,6 +1,7 @@
 package io.github.chrisruffalo.pintle.config.resolver;
 
 import io.github.chrisruffalo.pintle.config.ResolverSource;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 /**
  * This class will take a string (udp://8.8.8.8:53) and parse it
@@ -9,6 +10,7 @@ import io.github.chrisruffalo.pintle.config.ResolverSource;
  * other... creative interpretations of what it means to be
  * a URI.
  */
+@RegisterForReflection
 public class ResolverSourceFactory {
 
     public static ResolverSource create(final String uri) {

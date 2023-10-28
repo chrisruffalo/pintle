@@ -2,6 +2,7 @@ package io.github.chrisruffalo.pintle.config.matcher;
 
 import io.github.chrisruffalo.pintle.config.Matcher;
 import io.github.chrisruffalo.pintle.config.diff.Diff;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -12,6 +13,7 @@ import java.util.Set;
  * Logic for mainly performing diffing when a matcher
  * contains a list of other matchers.
  */
+@RegisterForReflection
 public abstract class MatcherListMatcher extends BaseMatcher {
 
     private List<Matcher> matchers = new LinkedList<>();

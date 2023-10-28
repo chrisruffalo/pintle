@@ -3,6 +3,7 @@ package io.github.chrisruffalo.pintle.config.matcher;
 import io.github.chrisruffalo.pintle.config.Matcher;
 import io.github.chrisruffalo.pintle.config.diff.Diff;
 import io.github.chrisruffalo.pintle.config.diff.StringDiffable;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -13,6 +14,7 @@ import java.util.Set;
  * and implementation of the logic needed for differencing
  * lists of strings (values) in the matcher.
  */
+@RegisterForReflection
 public abstract class StringValuesMatcher extends BaseMatcher {
 
     private Set<String> values = new LinkedHashSet<>();

@@ -2,6 +2,7 @@ package io.github.chrisruffalo.pintle.config.matcher;
 
 import io.github.chrisruffalo.pintle.config.Matcher;
 import io.github.chrisruffalo.pintle.config.diff.Diff;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -10,6 +11,7 @@ import java.util.Set;
  * Provides core logic that mainly provides the
  * ability for diff-ing one matcher against another.
  */
+@RegisterForReflection
 public abstract class BaseMatcher implements Matcher {
 
     protected abstract Diff internalDiff(Matcher other);

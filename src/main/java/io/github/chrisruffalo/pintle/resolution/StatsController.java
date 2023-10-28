@@ -18,7 +18,7 @@ import java.util.Optional;
 @ApplicationScoped
 public class StatsController {
 
-    @ConsumeEvent(value = Bus.UPDATE_QUESTION_STATS)
+    @ConsumeEvent(value = Bus.QUERY_DONE)
     @WithSpan("update question stats")
     @Transactional
     @RunOnVirtualThread
@@ -49,7 +49,7 @@ public class StatsController {
         return Question.count();
     }
 
-    @ConsumeEvent(value = Bus.UPDATE_CLIENT_STATS)
+    @ConsumeEvent(value = Bus.QUERY_DONE)
     @WithSpan("update client stats")
     @Transactional
     @RunOnVirtualThread

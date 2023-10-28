@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.chrisruffalo.pintle.config.PintleConfig;
 import io.github.chrisruffalo.pintle.config.ResolverSource;
 import io.github.chrisruffalo.pintle.config.diff.Diff;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import org.xbill.DNS.Resolver;
 
 import java.util.Collections;
@@ -17,6 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * child resolvers.
  *
  */
+@RegisterForReflection
 public abstract class BaseResolverSource implements ResolverSource {
 
     private String uri;

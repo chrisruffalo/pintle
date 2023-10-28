@@ -48,9 +48,6 @@ public class StoredList extends PanacheEntityBase {
     @Column(name = "last_configuration_id")
     public String lastConfiguration;
 
-    @Column(name = "cache_hash")
-    public String cacheHash;
-
     @Transient
     public long entries;
 

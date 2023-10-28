@@ -2,9 +2,11 @@ package io.github.chrisruffalo.pintle.config.matcher;
 
 import io.github.chrisruffalo.pintle.config.MatcherType;
 import io.github.chrisruffalo.pintle.model.QueryContext;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 import java.util.Objects;
 
+@RegisterForReflection
 public class HostnameMatcher extends StringValuesMatcher {
 
     @Override

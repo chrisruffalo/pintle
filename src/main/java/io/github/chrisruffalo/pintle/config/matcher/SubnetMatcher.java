@@ -4,6 +4,7 @@ import inet.ipaddr.IPAddress;
 import io.github.chrisruffalo.pintle.config.MatcherType;
 import io.github.chrisruffalo.pintle.model.QueryContext;
 import io.github.chrisruffalo.pintle.util.NetUtil;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 import java.util.Optional;
 
@@ -11,6 +12,7 @@ import java.util.Optional;
  * Matches against the client ip if it is within
  * a given subnet.
  */
+@RegisterForReflection
 public class SubnetMatcher extends StringValuesMatcher {
 
     @Override

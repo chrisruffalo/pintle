@@ -12,6 +12,12 @@ public class Bus {
     public static final String QUERY = "pintle-query";
 
     /**
+     * This is a broadcast topic that is fired when the
+     * query is complete
+     */
+    public static final String QUERY_DONE = "pintle-query-done";
+
+    /**
      * The bus that causes a response to be sent through a responder
      */
     public static final String RESPOND = "pintle-respond";
@@ -22,16 +28,6 @@ public class Bus {
     public static final String HANDLE_ERROR = "pintle-error";
 
     /**
-     * Where a query goes to write to the stdout log
-     */
-    public static final String LOG = "pintle-log";
-
-    /**
-     * Where a query goes to write to the persistent (database)log
-     */
-    public static final String PERSIST_LOG = "pintle-persist-log";
-
-    /**
      * Handles the cache lookup of a query
      */
     public static final String CHECK_CACHE = "pintle-check-cache";
@@ -40,16 +36,6 @@ public class Bus {
      * When a query is resolved this is the bus that stores it in a cache
      */
     public static final String UPDATE_CACHE = "pintle-update-cache";
-
-    /**
-     * Updates the question stats database with information about the given question
-     */
-    public static final String UPDATE_QUESTION_STATS = "pintle-update-question-stats";
-
-    /**
-     * Updates the client stats database with information about the given client
-     */
-    public static final String UPDATE_CLIENT_STATS = "pintle-update-client-stats";
 
     /**
      * Stores/caches MDNS entries

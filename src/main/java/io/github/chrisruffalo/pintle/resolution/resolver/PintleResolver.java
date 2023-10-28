@@ -179,7 +179,7 @@ public class PintleResolver implements Resolver {
         this.resolverConfig = resolverConfig;
         resolverConfig.sources().ifPresent(list -> {
             resolvers.clear();
-            resolvers.addAll(list.stream().map(rs -> rs.resolver(config, resolverConfig)).map(ResolverEntry::new).toList());
+            resolvers.addAll(list.stream().filter(Objects::nonNull).map(rs -> rs.resolver(config, resolverConfig)).filter(Objects::nonNull).map(ResolverEntry::new).toList());
         });
         // go through all resolvers by default
         this.retries = resolvers.size();

@@ -3,6 +3,7 @@ package io.github.chrisruffalo.pintle.config.resolver;
 import io.github.chrisruffalo.pintle.config.PintleConfig;
 import io.github.chrisruffalo.pintle.config.ResolverSourceType;
 import io.github.chrisruffalo.pintle.util.NetUtil;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import org.xbill.DNS.Resolver;
 import org.xbill.DNS.SimpleResolver;
 
@@ -13,6 +14,7 @@ import java.util.Optional;
  * Configures and constructs a UDP client using the dnsjava
  * SimpleResolver.
  */
+@RegisterForReflection
 public class UdpResolverSource extends BaseResolverSource {
 
     @Override

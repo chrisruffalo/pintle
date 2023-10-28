@@ -6,12 +6,14 @@ import io.github.chrisruffalo.pintle.config.MatcherType;
 import io.github.chrisruffalo.pintle.config.diff.Diff;
 import io.github.chrisruffalo.pintle.model.QueryContext;
 import io.github.chrisruffalo.pintle.util.NetUtil;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 import java.util.*;
 
 /**
  * Matches if the client ip is in a given range.
  */
+@RegisterForReflection
 public class RangeMatcher extends BaseMatcher {
 
     private static final Set<String> PROPS = new HashSet<>() {{

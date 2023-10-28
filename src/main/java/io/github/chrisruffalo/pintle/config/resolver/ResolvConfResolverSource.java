@@ -2,6 +2,7 @@ package io.github.chrisruffalo.pintle.config.resolver;
 
 import io.github.chrisruffalo.pintle.config.PintleConfig;
 import io.github.chrisruffalo.pintle.config.ResolverSourceType;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import org.xbill.DNS.Resolver;
 
 /**
@@ -9,6 +10,7 @@ import org.xbill.DNS.Resolver;
  * to provide resolution. This allows the sytem resolver, or something like it, to be easily put in the
  * chain of resolvers.
  */
+@RegisterForReflection
 public class ResolvConfResolverSource extends BaseResolverSource {
 
     @Override

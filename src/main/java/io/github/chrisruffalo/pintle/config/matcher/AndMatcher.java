@@ -3,11 +3,13 @@ package io.github.chrisruffalo.pintle.config.matcher;
 import io.github.chrisruffalo.pintle.config.Matcher;
 import io.github.chrisruffalo.pintle.config.MatcherType;
 import io.github.chrisruffalo.pintle.model.QueryContext;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 /**
  * A matcher that requires all children matchers
  * to match for it to return a true match.
  */
+@RegisterForReflection
 public class AndMatcher extends MatcherListMatcher {
 
     @Override

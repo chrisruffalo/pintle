@@ -12,7 +12,7 @@ servers.
 Against my better judgement I have decided to follow up my smash-hit 
 [gudgeon](https://github.com/chrisruffalo/gudgeon) with a Java version. 
 Golang never felt like it had the tooling or the structures to support
-what I wanted to do and the number of bugs continued to grow and grow.# pintle
+what I wanted to do and the number of bugs continued to grow and grow.
 
 ## No, but really, _Why_?
 The story of gudgeon (and, thus, pintle) starts back when my children were first
@@ -29,7 +29,22 @@ the ISP's DNS system. This allows automatic login in some cases.
 
 Since I am not a BIND wizard this meant creating a DNS server that was built
 for these purposes first and not created from different off-the-shelf products.
-It needed to be designed as a blocking forwarder from the ground up.
+It needed to be designed as a blocking forwarder from the ground up. (Apparently
+I think I am a Java wizard...)
+
+## Architecture
+Pintle is built on top of Quarkus and uses Quarkus and Smallrye features to
+manage redundancy and resiliancy. It makes full use of many of the standards
+provided by Quarkus including JAX-RS and JPA. It also uses a lot of Ver.x features
+like the in-memory event bus and reactive-based sockets. Pintle also makes use
+of other features like Smallrye fault-tolerance and configuration providers.
+
+The basic operation of Pintle is that it recieves a DNS message packet on
+one of the listeners (tcp or udp) and then it sends it as a message between
+different event handlers. These handlers are each responsible for both handling
+a certain stage (caching, blocking, resolution, etc) and coordinating with the
+next stage in the DNS resolving pipeline. When a resolution completes the
+results are logged and statistics are tabulated (if those features are enabled).
 
 ## Usage
 TODO: get actual installation procedures, quarkus-app, uber-jar, native, deb, rpm, etc.
@@ -37,7 +52,7 @@ TODO: get actual installation procedures, quarkus-app, uber-jar, native, deb, rp
 ## Building
 
 ### Requirements
-- JDK 21 (I use graalce 21)
+- JDK 21 (I use mandrel 23.1.r21)
 - Maven 3.8.6 (required by Quarkus 3.4.2)
 
 ### Extensions

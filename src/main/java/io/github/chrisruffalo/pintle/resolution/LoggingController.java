@@ -44,7 +44,7 @@ public class LoggingController {
     }
 
     @WithSpan("log response to stdout")
-    @ConsumeEvent(Bus.LOG)
+    @ConsumeEvent(Bus.QUERY_DONE)
     @RunOnVirtualThread
     public void log(QueryContext context) {
         // quick return if not enabled
@@ -64,7 +64,7 @@ public class LoggingController {
         }
     }
 
-    @ConsumeEvent(value = Bus.PERSIST_LOG)
+    @ConsumeEvent(value = Bus.QUERY_DONE)
     @WithSpan("persist response")
     @Transactional
     @RunOnVirtualThread

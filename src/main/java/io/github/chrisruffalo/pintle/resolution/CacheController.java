@@ -111,7 +111,7 @@ public class CacheController {
     }
 
     @WithSpan("update cache")
-    @ConsumeEvent(Bus.UPDATE_CACHE)
+    @ConsumeEvent(Bus.QUERY_DONE)
     @RunOnVirtualThread
     public void update(QueryContext context) throws UnknownHostException {
         // a context that came from the cache should not update the cache
@@ -122,6 +122,11 @@ public class CacheController {
         if (context.getQuestion() == null || context.getAnswer() == null || Rcode.NOERROR != context.getAnswer().getRcode()) {
             return;
         }
+        // if there are errors keep moving
+        if (!context.getExceptions().isEmpty()){
+            return;
+        }
+
         // get the key
         final String key = key(context.getResponder(), context.getQuestion());
         if (key == null) {
