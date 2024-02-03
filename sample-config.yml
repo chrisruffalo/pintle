@@ -47,12 +47,12 @@ pintle:
       addresses:
         - 0.0.0.0
       # udp and tcp need a port to listen on
-      port: 5353
+      port: 54
     - # this is a basic tcp listener, generally this is used for specialty cases
       # and larger data streams but pintle supports tcp as well
       name: basic-tcp
       type: tcp
-      port: 5353
+      port: 54
   # pintle has the ability to read device names and address. what this means is that
   # when a mdns query is answered the answers will be placed in the cache.
   # mdns only supports answers that end in `.local` so dns queries looking
@@ -129,6 +129,83 @@ pintle:
           type: tcp
         # if a port is given it will be used
         - uri: 8.8.4.4:53
+    - name: cloudflare-tls
+      balance: true
+      sources:
+        - uri: 1.0.0.1:853
+          type: tls
+          pem: |
+            -----BEGIN CERTIFICATE-----
+            MIIF9TCCBXygAwIBAgIQA8JqRlvV7Wjej2b5dc4uXzAKBggqhkjOPQQDAzBWMQsw
+            CQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMTAwLgYDVQQDEydEaWdp
+            Q2VydCBUTFMgSHlicmlkIEVDQyBTSEEzODQgMjAyMCBDQTEwHhcNMjMwMTEyMDAw
+            MDAwWhcNMjQwMTExMjM1OTU5WjByMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2Fs
+            aWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZyYW5jaXNjbzEZMBcGA1UEChMQQ2xvdWRm
+            bGFyZSwgSW5jLjEbMBkGA1UEAxMSY2xvdWRmbGFyZS1kbnMuY29tMFkwEwYHKoZI
+            zj0CAQYIKoZIzj0DAQcDQgAE8WA8mNsEQxx1/IvfcBNZj/HOWGEFoHH5gLTJQ+mD
+            iQ3+ItaqCY7TT+R/picYF5ljVow7R7jn6iCxMFkVjXChG6OCBA4wggQKMB8GA1Ud
+            IwQYMBaAFAq8CCkXjKU5bXoOzjPHLrPt+8N6MB0GA1UdDgQWBBRkutjX+1Qhhwjz
+            soJm+Z5fS3AE8jCBpgYDVR0RBIGeMIGbghJjbG91ZGZsYXJlLWRucy5jb22CFCou
+            Y2xvdWRmbGFyZS1kbnMuY29tgg9vbmUub25lLm9uZS5vbmWHBAEAAAGHBAEBAQGH
+            BKKfJAGHBKKfLgGHECYGRwBHAAAAAAAAAAAAEAGHECYGRwBHAAAAAAAAAAAAERGH
+            ECYGRwBHAAAAAAAAAAAAAGSHECYGRwBHAAAAAAAAAAAAZAAwDgYDVR0PAQH/BAQD
+            AgeAMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjCBmwYDVR0fBIGTMIGQ
+            MEagRKBChkBodHRwOi8vY3JsMy5kaWdpY2VydC5jb20vRGlnaUNlcnRUTFNIeWJy
+            aWRFQ0NTSEEzODQyMDIwQ0ExLTEuY3JsMEagRKBChkBodHRwOi8vY3JsNC5kaWdp
+            Y2VydC5jb20vRGlnaUNlcnRUTFNIeWJyaWRFQ0NTSEEzODQyMDIwQ0ExLTEuY3Js
+            MD4GA1UdIAQ3MDUwMwYGZ4EMAQICMCkwJwYIKwYBBQUHAgEWG2h0dHA6Ly93d3cu
+            ZGlnaWNlcnQuY29tL0NQUzCBhQYIKwYBBQUHAQEEeTB3MCQGCCsGAQUFBzABhhho
+            dHRwOi8vb2NzcC5kaWdpY2VydC5jb20wTwYIKwYBBQUHMAKGQ2h0dHA6Ly9jYWNl
+            cnRzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydFRMU0h5YnJpZEVDQ1NIQTM4NDIwMjBD
+            QTEtMS5jcnQwCQYDVR0TBAIwADCCAX0GCisGAQQB1nkCBAIEggFtBIIBaQFnAHUA
+            7s3QZNXbGs7FXLedtM0TojKHRny87N7DUUhZRnEftZsAAAGFqCecuAAABAMARjBE
+            AiAdA/2qx7A3w0Jn7vVuS/qJjfHQURcg1UbQ4JG9wjDBXAIgYsXLQjjc4KaK6y+g
+            vU+HP4Ow41mj3tiDSp/6GrZCJzEAdwBIsONr2qZHNA/lagL6nTDrHFIBy1bdLIHZ
+            u7+rOdiEcwAAAYWoJ5zeAAAEAwBIMEYCIQCbW0qSTa+OBqRPNVxEjsAlZ7O31yxx
+            hRQI5t1UjU97AgIhAJJGLQBjwKVLAul//qX6KKnN/aJDzUSe+i9AeNvCU61+AHUA
+            O1N3dT4tuYBOizBbBv5AO2fYT8P0x70ADS1yb+H61BcAAAGFqCec6QAABAMARjBE
+            AiBP/2dqsY1syhBOL5tOc6a6JDzAchfFlDSd6W8DKerZ3QIgZUQUM4nYFlyMBRxn
+            YfTXn63X/m5ViNBrV/z1GSPzJ5IwCgYIKoZIzj0EAwMDZwAwZAIwP/iWG6Wa0U8A
+            dDjvbUOxXdI6WgQXwVng/Wrs2G3P2CPXyDi8y4D523XfIYDdY3KQAjA0t0mL62JA
+            NgpCMd3y7oOrMz01u/FQVel18mXq+PAkEYB6S+9BJOxjGcKGIEXtMxg=
+            -----END CERTIFICATE-----
+        - uri: 1.1.1.1:853
+          type: tls
+          pem: |
+            -----BEGIN CERTIFICATE-----
+            MIIF9TCCBXygAwIBAgIQA8JqRlvV7Wjej2b5dc4uXzAKBggqhkjOPQQDAzBWMQsw
+            CQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMTAwLgYDVQQDEydEaWdp
+            Q2VydCBUTFMgSHlicmlkIEVDQyBTSEEzODQgMjAyMCBDQTEwHhcNMjMwMTEyMDAw
+            MDAwWhcNMjQwMTExMjM1OTU5WjByMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2Fs
+            aWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZyYW5jaXNjbzEZMBcGA1UEChMQQ2xvdWRm
+            bGFyZSwgSW5jLjEbMBkGA1UEAxMSY2xvdWRmbGFyZS1kbnMuY29tMFkwEwYHKoZI
+            zj0CAQYIKoZIzj0DAQcDQgAE8WA8mNsEQxx1/IvfcBNZj/HOWGEFoHH5gLTJQ+mD
+            iQ3+ItaqCY7TT+R/picYF5ljVow7R7jn6iCxMFkVjXChG6OCBA4wggQKMB8GA1Ud
+            IwQYMBaAFAq8CCkXjKU5bXoOzjPHLrPt+8N6MB0GA1UdDgQWBBRkutjX+1Qhhwjz
+            soJm+Z5fS3AE8jCBpgYDVR0RBIGeMIGbghJjbG91ZGZsYXJlLWRucy5jb22CFCou
+            Y2xvdWRmbGFyZS1kbnMuY29tgg9vbmUub25lLm9uZS5vbmWHBAEAAAGHBAEBAQGH
+            BKKfJAGHBKKfLgGHECYGRwBHAAAAAAAAAAAAEAGHECYGRwBHAAAAAAAAAAAAERGH
+            ECYGRwBHAAAAAAAAAAAAAGSHECYGRwBHAAAAAAAAAAAAZAAwDgYDVR0PAQH/BAQD
+            AgeAMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjCBmwYDVR0fBIGTMIGQ
+            MEagRKBChkBodHRwOi8vY3JsMy5kaWdpY2VydC5jb20vRGlnaUNlcnRUTFNIeWJy
+            aWRFQ0NTSEEzODQyMDIwQ0ExLTEuY3JsMEagRKBChkBodHRwOi8vY3JsNC5kaWdp
+            Y2VydC5jb20vRGlnaUNlcnRUTFNIeWJyaWRFQ0NTSEEzODQyMDIwQ0ExLTEuY3Js
+            MD4GA1UdIAQ3MDUwMwYGZ4EMAQICMCkwJwYIKwYBBQUHAgEWG2h0dHA6Ly93d3cu
+            ZGlnaWNlcnQuY29tL0NQUzCBhQYIKwYBBQUHAQEEeTB3MCQGCCsGAQUFBzABhhho
+            dHRwOi8vb2NzcC5kaWdpY2VydC5jb20wTwYIKwYBBQUHMAKGQ2h0dHA6Ly9jYWNl
+            cnRzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydFRMU0h5YnJpZEVDQ1NIQTM4NDIwMjBD
+            QTEtMS5jcnQwCQYDVR0TBAIwADCCAX0GCisGAQQB1nkCBAIEggFtBIIBaQFnAHUA
+            7s3QZNXbGs7FXLedtM0TojKHRny87N7DUUhZRnEftZsAAAGFqCecuAAABAMARjBE
+            AiAdA/2qx7A3w0Jn7vVuS/qJjfHQURcg1UbQ4JG9wjDBXAIgYsXLQjjc4KaK6y+g
+            vU+HP4Ow41mj3tiDSp/6GrZCJzEAdwBIsONr2qZHNA/lagL6nTDrHFIBy1bdLIHZ
+            u7+rOdiEcwAAAYWoJ5zeAAAEAwBIMEYCIQCbW0qSTa+OBqRPNVxEjsAlZ7O31yxx
+            hRQI5t1UjU97AgIhAJJGLQBjwKVLAul//qX6KKnN/aJDzUSe+i9AeNvCU61+AHUA
+            O1N3dT4tuYBOizBbBv5AO2fYT8P0x70ADS1yb+H61BcAAAGFqCec6QAABAMARjBE
+            AiBP/2dqsY1syhBOL5tOc6a6JDzAchfFlDSd6W8DKerZ3QIgZUQUM4nYFlyMBRxn
+            YfTXn63X/m5ViNBrV/z1GSPzJ5IwCgYIKoZIzj0EAwMDZwAwZAIwP/iWG6Wa0U8A
+            dDjvbUOxXdI6WgQXwVng/Wrs2G3P2CPXyDi8y4D523XfIYDdY3KQAjA0t0mL62JA
+            NgpCMd3y7oOrMz01u/FQVel18mXq+PAkEYB6S+9BJOxjGcKGIEXtMxg=
+            -----END CERTIFICATE-----
     - # some specific resolvers might exist for
       # a given isp
       name: att-resolver
@@ -196,7 +273,7 @@ pintle:
       # when the groups are configured a warning
       # will be printed if no resolver is attached to a group
       resolvers:
-        - google-tcp
+        - google
       # the default group cannot have matchers. if any matchers
       # are defined for the default group a warning will be
       # written to the log and the matchers will be ignored.

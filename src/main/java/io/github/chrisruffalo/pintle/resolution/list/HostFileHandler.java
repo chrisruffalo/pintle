@@ -1,33 +1,47 @@
 package io.github.chrisruffalo.pintle.resolution.list;
 
 import io.github.chrisruffalo.pintle.config.ActionList;
+import io.github.chrisruffalo.pintle.config.producer.ConfigProducer;
 import io.github.chrisruffalo.pintle.model.list.StoredLine;
 import io.github.chrisruffalo.pintle.model.list.StoredSource;
 import io.github.chrisruffalo.pintle.util.NameUtil;
 import io.github.chrisruffalo.pintle.util.PathUtil;
+import io.github.chrisruffalo.pintle.util.UriUtil;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.lang.instrument.Instrumentation;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.StringTokenizer;
+import java.util.*;
 
 @ApplicationScoped
 public class HostFileHandler extends FileSourceHandler {
 
+    @Inject
+    ConfigProducer producer;
+
     @Override
     @Transactional
     @RunOnVirtualThread
-    public long process(long listId, ActionList config, StoredSource storedSource) {
+    public long process(String configId, long listId, ActionList config, StoredSource storedSource) {
+
+        // get path for persisted data
+        final Path listDataPath = PathUtil.real(producer.get(configId).etc().home()).resolve("data").resolve("list").resolve(listId + "_" + storedSource.id + "_" + storedSource.version + ".mph");
+        if (!Files.exists(listDataPath.getParent())){
+            try {
+                Files.createDirectories(listDataPath.getParent());
+            } catch (IOException e) {
+                throw new RuntimeException("could not ensure data for list storage was created", e);
+            }
+        }
 
         // read lines
         final Path dataPath = PathUtil.real(storedSource.dataPath);
@@ -38,16 +52,13 @@ public class HostFileHandler extends FileSourceHandler {
             return 0;
         }
 
-        final URI uri;
-        try {
-            uri = new URI(storedSource.uri);
-        } catch (URISyntaxException e) {
-            // there should be no literal way to get here, the uri had
-            // to survive parsing to get into the db and thus into the
-            // storedSource
-            throw new RuntimeException(e);
+        final Optional<URI> uriOptional = UriUtil.parse(storedSource.uri);
+        if (uriOptional.isEmpty()) {
+            logger.errorf("the source uri %s could not be converted to a uri", storedSource.uri);
+            return 0;
         }
 
+        final URI uri = uriOptional.get();
         final String host = uri.getHost();
         final String path = uri.getPath();
         String file;
@@ -68,6 +79,7 @@ public class HostFileHandler extends FileSourceHandler {
             return versionCount;
         }
 
+        final Map<String, String> resolutionMap = new TreeMap<>();
         final Set<String> dontLoadDuplicates = new HashSet<>();
 
         int loaded = 0;
@@ -97,12 +109,6 @@ public class HostFileHandler extends FileSourceHandler {
                 }
                 hostname = NameUtil.string(hostname);
 
-                final String key = hostname + "|" + resolveTo;
-                if (dontLoadDuplicates.contains(key)) {
-                    continue;
-                }
-                dontLoadDuplicates.add(key);
-
                 final StoredLine newLine = new StoredLine();
                 newLine.listId = listId;
                 newLine.sourceId = storedSource.id;
@@ -111,7 +117,12 @@ public class HostFileHandler extends FileSourceHandler {
                     newLine.resolveTo = resolveTo;
                 }
                 newLine.version = storedSource.version;
-                newLine.persist();
+                if(dontLoadDuplicates.contains(newLine.hostname)) {
+                    continue;
+                }
+                //newLine.persist();
+                resolutionMap.put(newLine.hostname, newLine.resolveTo.intern());
+                dontLoadDuplicates.add(newLine.hostname);
                 loaded++;
             }
         } catch (IOException e) {
@@ -119,6 +130,7 @@ public class HostFileHandler extends FileSourceHandler {
         }
 
         logger.infof("[%s] %d new from %s/.../%s [%dms]", config.name(), loaded, host, file, start.until(ZonedDateTime.now(), ChronoUnit.MILLIS));
+
 
         return loaded;
     }

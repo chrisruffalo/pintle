@@ -1,6 +1,7 @@
 package io.github.chrisruffalo.pintle.resolution.action;
 
 import io.github.chrisruffalo.pintle.config.ActionList;
+import io.github.chrisruffalo.pintle.config.producer.ConfigProducer;
 import io.github.chrisruffalo.pintle.model.list.StoredLine;
 import io.github.chrisruffalo.pintle.model.list.StoredList;
 import io.github.chrisruffalo.pintle.model.list.StoredSource;
@@ -20,6 +21,9 @@ import java.util.*;
 public class ActOnContains extends AbstractAct {
 
     @Inject
+    ConfigProducer producer;
+
+    @Inject
     ListController listController;
 
     @Override
@@ -29,6 +33,7 @@ public class ActOnContains extends AbstractAct {
         if (lists.isEmpty()){
             return Optional.empty();
         }
+
 
         final Optional<StoredLine> lineOptional = createQuery(configId, NameUtil.domains(queryName), lists).stream().findFirst();
         if (lineOptional.isEmpty()) {

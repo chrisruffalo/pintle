@@ -50,6 +50,11 @@ public class Bus {
     public static final String HANDLE_ACTION_LISTS = "pitnle-handle-action-lists";
 
     /**
+     * Assign a name (or names) to the query context based on the client ip
+     */
+    public static final String ASSIGN_CLIENT_NAME = "pintle-assign-client-name";
+
+    /**
      * Configuration updates
      */
     public static final String CONFIG_UPDATE_LOGGING = "pintle-config-update-logging";

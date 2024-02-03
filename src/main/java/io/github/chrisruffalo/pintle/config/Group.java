@@ -2,6 +2,7 @@ package io.github.chrisruffalo.pintle.config;
 
 import io.github.chrisruffalo.pintle.config.diff.Diff;
 import io.github.chrisruffalo.pintle.config.diff.Diffable;
+import io.github.chrisruffalo.pintle.config.diff.StringDiffable;
 import io.github.chrisruffalo.pintle.config.serde.MatcherConverter;
 import io.github.chrisruffalo.pintle.model.QueryContext;
 import io.smallrye.config.WithConverter;
@@ -74,7 +75,9 @@ public interface Group extends Named, Diffable<Group>, NamedComparable<Group> {
         if (other == null) {
             diffs.add("");
         } else {
-
+            diffs.addAll(StringDiffable.compare("resolvers", this.resolvers(), other.resolvers()).differences());
+            diffs.addAll(StringDiffable.compare("lists", this.lists(), other.lists()).differences());
+            diffs.addAll(Diff.compare("matchers", this.matchers(), other.matchers()).differences());
         }
         return new Diff(diffs);
     }

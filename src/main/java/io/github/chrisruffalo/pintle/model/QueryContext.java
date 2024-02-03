@@ -7,8 +7,10 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import org.xbill.DNS.Message;
 
 import java.time.ZonedDateTime;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Handles the accumulation of data throughout the process
@@ -83,6 +85,15 @@ public class QueryContext {
      * The group that matched first to the query.
      */
     private final List<Group> groups = new LinkedList<>();
+
+    /**
+     * Friendly names, picked up by configuration, passively
+     * through MDNS, by WINBIND query, or by any other mechanism
+     * that allows the client to be identified by something other
+     * than their IP address (making it easier to keep track
+     * of what is what in the UI).
+     */
+    private final Set<String> clientNames = new LinkedHashSet<>();
 
     /**
      * When true sets that the source was a cached entry. Cached entries

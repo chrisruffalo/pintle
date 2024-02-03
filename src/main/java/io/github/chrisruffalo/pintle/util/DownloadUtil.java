@@ -91,7 +91,7 @@ public class DownloadUtil {
 
             if (response.headers().contains("content-encoding")) {
                 dr.setCompression(response.headers().get("content-encoding"));
-                cacheName = cacheName + "." + dr.getCompression();
+                cacheName = cacheName + "." + mapEncodingSuffix(dr.getCompression());
             }
 
             // use as final before return
@@ -127,5 +127,13 @@ public class DownloadUtil {
         }
         return kvp;
     }
+
+    static String mapEncodingSuffix(final String encoding) {
+        if ("gzip".equalsIgnoreCase(encoding)) {
+            return "gz";
+        }
+        return encoding;
+    }
+
 
 }

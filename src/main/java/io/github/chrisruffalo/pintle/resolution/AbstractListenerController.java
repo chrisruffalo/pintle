@@ -30,12 +30,12 @@ public abstract class AbstractListenerController {
     @Inject
     Tracer tracer;
 
-    protected final List<ListenerHolder> listeners = new LinkedList<>();
+    protected final List<ListenerHolder<?>> listeners = new LinkedList<>();
 
     protected abstract Logger logger();
 
     public void stopServers(@Observes ShutdownEvent shutdownEvent) {
-        for (final ListenerHolder server : this.listeners) {
+        for (final ListenerHolder<?> server : this.listeners) {
             // services with unspecified types go here
             if (server == null) {
                 continue;

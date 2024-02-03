@@ -47,14 +47,12 @@ create table line (
     source_id bigint not null,
     -- the hostname (this should be the query name match)
     hostname char varying not null,
-    -- what the hostname should resolve to (usually 0.0.0.0 which is a block)
-    resolve_to char varying(39),
+    -- what the hostname should resolve to (usually 0.0.0.0 which is a block, but could be txt or anything larger)
+    resolve_to char varying,
     -- the version of the source if it has been loaded multiple times
-    source_version bigint not null default 1,
-    primary key (list_id,source_id,hostname,resolve_to, source_version)
+    source_version bigint not null default 0,
+    primary key (list_id, source_id, hostname, resolve_to, source_version)
 );
 
--- when searching by list id and source id this is useful
-CREATE INDEX line_list_source ON line(list_id, source_id);
--- ths index facilitates searching for block items during the block process
-CREATE INDEX line_list_source_hostname_version ON line(list_id, source_id, hostname, source_version)
+-- ths index facilitates searching for listed items
+CREATE INDEX line_hostname ON line(hostname);

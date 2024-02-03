@@ -30,7 +30,7 @@
     <quarkus.version>3.4.2</quarkus.version>
 
     <!-- non-quarkus dependencies -->
-    <version.dnsjava>3.5.2</version.dnsjava>
+    <version.dnsjava>3.6.0-SNAPSHOT</version.dnsjava>
     <version.javassist>3.29.2-GA</version.javassist>
   </properties>
   <dependencyManagement>

@@ -21,7 +21,6 @@ import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import java.beans.Transient;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -204,7 +203,7 @@ public class ListController {
             return false;
         }
 
-        long loaded = processorOptional.get().process(processSourceEvent.getStoredListId(), processSourceEvent.getConfig(), source);
+        long loaded = processorOptional.get().process(processSourceEvent.getConfigId(), processSourceEvent.getStoredListId(), processSourceEvent.getConfig(), source);
         logger.debugf("loaded %d items", loaded);
 
         // add source to version map

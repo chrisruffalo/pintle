@@ -2,6 +2,7 @@ package io.github.chrisruffalo.pintle.config.resolver;
 
 import io.github.chrisruffalo.pintle.config.PintleConfig;
 import io.github.chrisruffalo.pintle.config.ResolverSourceType;
+import io.github.chrisruffalo.pintle.dns.VertxDnsClient;
 import io.github.chrisruffalo.pintle.util.NetUtil;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import org.xbill.DNS.Resolver;
@@ -25,6 +26,10 @@ public class UdpResolverSource extends BaseResolverSource {
     @Override
     protected Resolver construct(PintleConfig config, io.github.chrisruffalo.pintle.config.Resolver resolverConfig) {
         Optional<InetSocketAddress> socketAddress = NetUtil.fromString(this.uri(), 53);
-        return socketAddress.map(SimpleResolver::new).orElse(null);
+        final SimpleResolver sr = socketAddress.map(SimpleResolver::new).orElse(null);
+        if (sr != null) {
+            sr.setClientFactory(new VertxDnsClient());
+        }
+        return sr;
     }
 }

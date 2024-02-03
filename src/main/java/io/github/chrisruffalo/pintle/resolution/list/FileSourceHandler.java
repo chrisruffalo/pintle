@@ -152,7 +152,7 @@ public abstract class FileSourceHandler implements SourceHandler {
     }
 
     protected BufferedReader open(StoredSource storedSource) throws IOException {
-        if ("gzip".equalsIgnoreCase(storedSource.compression)) {
+        if ("gzip".equalsIgnoreCase(storedSource.compression) || "gz".equalsIgnoreCase(storedSource.compression)) {
             return new BufferedReader(new InputStreamReader(new GZIPInputStream(Files.newInputStream(PathUtil.real(storedSource.dataPath)))));
         }
         return Files.newBufferedReader(PathUtil.real(storedSource.dataPath));

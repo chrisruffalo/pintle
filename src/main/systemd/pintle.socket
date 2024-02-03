@@ -1,0 +1,11 @@
+[Unit]
+Description=Pintle TCP Socket
+PartOf=pintle.service
+After=network.service
+
+[Socket]
+ListenStream=0.0.0.0:54
+ListenDatagram=0.0.0.0:54
+
+[Install]
+WantedBy=sockets.target

@@ -16,7 +16,6 @@ import org.xbill.DNS.Flags;
 import org.xbill.DNS.Message;
 import org.xbill.DNS.Rcode;
 
-import java.io.IOException;
 import java.net.UnknownHostException;
 import java.time.ZonedDateTime;
 import java.util.Optional;

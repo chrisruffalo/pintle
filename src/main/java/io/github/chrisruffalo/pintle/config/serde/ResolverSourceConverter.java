@@ -48,6 +48,12 @@ public class ResolverSourceConverter implements Converter<List<ResolverSource>> 
         }
         // parse to yaml
         try {
+            if (s.contains("\n")) {
+                s = s.replaceAll("\n", "");
+            }
+            if (s.contains("\\ ")) {
+                s = s.replaceAll("\\\\ ", " ");
+            }
             // this is a bit of a rigamarole but it goes through the process of finding out
             // if the tree has the desired intermediary list (`sources`) and then if it does
             // and the list has content...

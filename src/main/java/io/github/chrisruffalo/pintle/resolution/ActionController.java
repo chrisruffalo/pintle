@@ -8,15 +8,10 @@ import io.github.chrisruffalo.pintle.config.producer.ConfigProducer;
 import io.github.chrisruffalo.pintle.event.Bus;
 import io.github.chrisruffalo.pintle.model.QueryContext;
 import io.github.chrisruffalo.pintle.model.QueryResult;
-import io.github.chrisruffalo.pintle.model.list.StoredLine;
-import io.github.chrisruffalo.pintle.model.list.StoredList;
-import io.github.chrisruffalo.pintle.model.list.StoredSource;
 import io.github.chrisruffalo.pintle.resolution.action.Act;
 import io.github.chrisruffalo.pintle.resolution.action.ActOnContains;
 import io.github.chrisruffalo.pintle.resolution.action.ActOnRegex;
 import io.github.chrisruffalo.pintle.resolution.action.ActionResult;
-import io.github.chrisruffalo.pintle.util.NameUtil;
-import io.quarkus.panache.common.Parameters;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.vertx.core.eventbus.EventBus;
@@ -25,11 +20,8 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 import org.xbill.DNS.Name;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Uses the state of the query context
@@ -69,7 +61,7 @@ public class ActionController {
         final PintleConfig config = configProducer.get(context.getConfigId());
 
         // we need to get the set of lists we will be applying, in order, by visiting
-        // each group (again: in order) and collecting all of the names of the action
+        // each group (again: in order) and collecting all the names of the action
         // lists configured for that group (in order). In order.
         final List<ActionList> toApply = context.getGroups().stream().mapMulti((group, consumer) -> {
             if (group.lists().isEmpty()) {

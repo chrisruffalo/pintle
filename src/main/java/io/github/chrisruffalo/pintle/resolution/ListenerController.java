@@ -39,7 +39,7 @@ public class ListenerController extends AbstractListenerController {
         return logger;
     }
 
-    private ListenerHolder startServer(final String configId, final Listener config) {
+    private ListenerHolder<?> startServer(final String configId, final Listener config) {
         if(ServiceType.TCP.equals(config.type())) {
             return startTcpServer(configId, config);
         } else if (ServiceType.UDP.equals(config.type())) {
@@ -48,7 +48,7 @@ public class ListenerController extends AbstractListenerController {
         return null;
     }
 
-    private ListenerHolder startTcpServer(final String configId, final Listener config) {
+    private ListenerHolder<NetServer> startTcpServer(final String configId, final Listener config) {
         final int port = config.port().orElse(SERVER_PORT);
 
         final NetServerOptions options = new NetServerOptions()
@@ -82,7 +82,7 @@ public class ListenerController extends AbstractListenerController {
                     context.setListenerName(config.name());
                     context.setConfigId(configId);
                     // send event, wait for result
-                    eventBus.send(Bus.ASSIGN_GROUP, context);
+                    eventBus.send(Bus.ASSIGN_CLIENT_NAME, context);
                 } catch (Exception ex) {
                     final QueryContext context = new QueryContext(traceId, span, responder, ex);
                     context.setListenerName(config.name());
@@ -103,10 +103,10 @@ public class ListenerController extends AbstractListenerController {
             }
         });
 
-        return new TcpListenerHolder(config, tcpServer);
+        return new TcpListenerHolder(config, tcpServer, SERVER_HOST);
     }
 
-    private ListenerHolder startUdpServer(final String configId, final Listener config) {
+    private ListenerHolder<DatagramSocket> startUdpServer(final String configId, final Listener config) {
         final DatagramSocket udpServer = vertx.createDatagramSocket(new DatagramSocketOptions().setIpV6(false).setReuseAddress(true));
         int port = config.port().orElse(SERVER_PORT);
         udpServer.listen(port, SERVER_HOST, asyncResult -> {
@@ -126,7 +126,7 @@ public class ListenerController extends AbstractListenerController {
                         context.setConfigId(configId);
                         context.setListenerName(config.name());
                         // send event, wait for result
-                        eventBus.send(Bus.ASSIGN_GROUP, context);
+                        eventBus.send(Bus.ASSIGN_CLIENT_NAME, context);
                     } catch (Exception ex) {
                         final QueryContext context = new QueryContext(traceId, span, responder, ex);
                         context.setConfigId(configId);
@@ -140,7 +140,7 @@ public class ListenerController extends AbstractListenerController {
             }
         });
 
-        return new UdpListenerHolder(config, udpServer);
+        return new UdpListenerHolder(config, udpServer, SERVER_HOST);
     }
 
     @ConsumeEvent(value = Bus.CONFIG_UPDATE_LISTENERS, ordered = true)

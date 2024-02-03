@@ -1,0 +1,12 @@
+[Unit]
+Description=Pintle (A blocking/forwarding DNS server)
+Requires=pintle.socket
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/java -jar /home/chris/workspace/pintle/target/quarkus-app/quarkus-run.jar -c /home/chris/workspace/pintle/sample-config.yml
+NonBlocking=true
+
+[Install]
+WantedBy=multi-user.target
