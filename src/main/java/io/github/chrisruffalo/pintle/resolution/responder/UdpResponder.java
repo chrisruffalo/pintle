@@ -5,7 +5,7 @@ import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.datagram.DatagramSocket;
 
-public class UdpResponder extends BaseResponder{
+public class UdpResponder extends BaseResponder {
 
     final DatagramSocket datagramSocket;
 

@@ -7,14 +7,12 @@ import io.github.chrisruffalo.pintle.model.list.StoredSource;
 import io.github.chrisruffalo.pintle.util.NameUtil;
 import io.github.chrisruffalo.pintle.util.PathUtil;
 import io.github.chrisruffalo.pintle.util.UriUtil;
-import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.lang.instrument.Instrumentation;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,7 +28,6 @@ public class HostFileHandler extends FileSourceHandler {
 
     @Override
     @Transactional
-    @RunOnVirtualThread
     public long process(String configId, long listId, ActionList config, StoredSource storedSource) {
 
         // get path for persisted data

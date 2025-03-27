@@ -2,19 +2,14 @@ package io.github.chrisruffalo.pintle.cmd;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
-import com.sun.management.UnixOperatingSystemMXBean;
 import io.github.chrisruffalo.pintle.cmd.line.CommandLineRoot;
 import io.github.chrisruffalo.pintle.config.PintleConfig;
 import io.github.chrisruffalo.pintle.config.producer.ConfigProducer;
 import io.github.chrisruffalo.pintle.util.PathUtil;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.annotations.QuarkusMain;
-import io.vertx.core.Vertx;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
-import java.nio.channels.Channel;
 import java.nio.file.Path;
 import java.util.Optional;
 

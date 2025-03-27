@@ -2,7 +2,6 @@ package io.github.chrisruffalo.pintle.resolution;
 
 import io.github.chrisruffalo.pintle.event.Bus;
 import io.github.chrisruffalo.pintle.model.QueryContext;
-import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.vertx.core.eventbus.EventBus;
@@ -24,7 +23,6 @@ public class ClientNameController {
     @Inject
     EventBus eventBus;
 
-    @WithSpan("assign client name")
     @ConsumeEvent(Bus.ASSIGN_CLIENT_NAME)
     @Transactional
     @RunOnVirtualThread
@@ -33,6 +31,9 @@ public class ClientNameController {
         // get names for the client address
         final String clientAddress = context.getResponder().toClient();
 
+        // lookup client group based on client address
+
+        // forward event to group assignment
         eventBus.send(Bus.ASSIGN_GROUP, context);
     }
 

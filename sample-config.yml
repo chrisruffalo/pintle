@@ -25,7 +25,7 @@ pintle:
     # if queries should be logged to stdout. by default queries are
     # only logged to the database. this can be quite noisy. this
     # is disabled (false) by default.
-    stdout: false
+    stdout: true
     # this section controls the database
     database:
       # enabled by default
@@ -47,12 +47,12 @@ pintle:
       addresses:
         - 0.0.0.0
       # udp and tcp need a port to listen on
-      port: 54
+      port: 5454
     - # this is a basic tcp listener, generally this is used for specialty cases
       # and larger data streams but pintle supports tcp as well
       name: basic-tcp
       type: tcp
-      port: 54
+      port: 5454
   # pintle has the ability to read device names and address. what this means is that
   # when a mdns query is answered the answers will be placed in the cache.
   # mdns only supports answers that end in `.local` so dns queries looking
@@ -98,6 +98,9 @@ pintle:
   # resolvers are the upstream sources of dns information. these can take the form of dns servers
   # supporting several protocols, flat files with lists of DNS information, or zone files.
   resolvers:
+    - name: mdns
+      sources:
+        - type: mdns
     - # resolvers are identified by name so that they can be used elsewhere in the configuration
       name: google
       # by default sources are tried
@@ -273,6 +276,7 @@ pintle:
       # when the groups are configured a warning
       # will be printed if no resolver is attached to a group
       resolvers:
+        - mdns
         - google
       # the default group cannot have matchers. if any matchers
       # are defined for the default group a warning will be

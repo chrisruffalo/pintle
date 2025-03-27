@@ -13,7 +13,8 @@ public class Bus {
 
     /**
      * This is a broadcast topic that is fired when the
-     * query is complete
+     * query is complete and allows clean-up/end of the
+     * response chain
      */
     public static final String QUERY_DONE = "pintle-query-done";
 

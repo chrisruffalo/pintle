@@ -7,10 +7,16 @@ import io.github.chrisruffalo.pintle.event.ConfigUpdate;
 import io.github.chrisruffalo.pintle.model.QueryContext;
 import io.github.chrisruffalo.pintle.model.log.AnswerItem;
 import io.github.chrisruffalo.pintle.model.log.LogItem;
-import io.opentelemetry.instrumentation.annotations.WithSpan;
+import io.github.chrisruffalo.pintle.telemetry.SpanController;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.transaction.UserTransaction;
@@ -19,10 +25,11 @@ import org.xbill.DNS.Message;
 import org.xbill.DNS.Section;
 import org.xbill.DNS.Type;
 
+import java.util.Objects;
 import java.util.Optional;
 
 @ApplicationScoped
-public class LoggingController {
+public class LoggingController extends PostRespondController {
 
     @Inject
     ConfigProducer configProducer;
@@ -35,6 +42,17 @@ public class LoggingController {
     @Inject
     UserTransaction transaction;
 
+    @Inject
+    Tracer tracer;
+
+    @Inject
+    SpanController spanController;
+
+    public void init(@Observes StartupEvent start){
+        // has 2 post-query events
+        this.register(2);
+    }
+
     @ConsumeEvent(value = Bus.CONFIG_UPDATE_LOGGING, ordered = true)
     public void configure(ConfigUpdate event) {
         if (!event.isInitial()) {
@@ -43,66 +61,93 @@ public class LoggingController {
         this.pintleConfig = configProducer.get(event.getId());
     }
 
-    @WithSpan("log response to stdout")
     @ConsumeEvent(Bus.QUERY_DONE)
     @RunOnVirtualThread
     public void log(QueryContext context) {
         // quick return if not enabled
-        if(pintleConfig == null || !pintleConfig.log().enabled() || !pintleConfig.log().stdout()) {
+        if (pintleConfig == null || !pintleConfig.log().enabled() || !pintleConfig.log().stdout()) {
+            if (done(context)){
+                context.getSpan().end();
+            }
             return;
         }
 
-        final Message question = context.getQuestion();
-        final Message answer = context.getAnswer();
-        String appended = String.format("[%dms]", context.getElapsedMs());
-        if (!context.getExceptions().isEmpty()) {
-            logger.errorf("[%s] encountered %d error(s) starting with: %s", context.getTraceId(), context.getExceptions().size(), context.getExceptions().getFirst().getMessage());
-        } else if (question != null) {
-            logger.infof("[%s] answered question id=%s type=%s name=%s %s", context.getTraceId(), question.getHeader().getID(), Type.string(question.getQuestion().getType()), question.getQuestion().getName().toString(false), appended);
-        } else if (answer != null) {
-            logger.debugf("[%s] responded with answer id=%s %s", context.getTraceId(), answer.getHeader().getID(), appended);
+        try (final Scope outer = spanController.startAsCurrent(context)) {
+            final Span span = tracer.spanBuilder("log-to-console").startSpan();
+            try (final Scope scope = span.makeCurrent()) {
+                final Message question = context.getQuestion();
+                final Message answer = context.getAnswer();
+                String appended = String.format("[%dms]", context.getElapsedMs());
+                if (!context.getExceptions().isEmpty()) {
+                    logger.errorf("[%s] encountered %d error(s) starting with: %s", context.getTraceId(), context.getExceptions().size(), context.getExceptions().getFirst().getMessage());
+                } else if (question != null) {
+                    final String log = String.format("answered question id=%s type=%s name=%s %s", question.getHeader().getID(), Type.string(question.getQuestion().getType()), question.getQuestion().getName().toString(false), appended);
+                    logger.infof("[%s] %s", context.getTraceId(), log);
+                    context.getSpan().addEvent(log);
+                } else if (answer != null) {
+                    logger.debugf("[%s] responded with answer id=%s %s", context.getTraceId(), answer.getHeader().getID(), appended);
+                }
+            } finally {
+                span.end();
+            }
+        }
+
+        if (done(context)){
+            context.getSpan().end();
         }
     }
 
-    @ConsumeEvent(value = Bus.QUERY_DONE)
-    @WithSpan("persist response")
+    @ConsumeEvent(Bus.QUERY_DONE)
     @Transactional
     @RunOnVirtualThread
     public void logToDatabase(QueryContext context) {
         // quick return if not enabled
         if (pintleConfig == null || !pintleConfig.log().enabled() || !pintleConfig.log().database().enabled()) {
+            if (done(context)){
+                context.getSpan().end();
+            }
             return;
         }
 
-        final LogItem item = new LogItem();
-        item.start = context.getStarted();
-        item.result = context.getResult();
-        item.elapsedTime = context.getElapsedMs();
-        item.service = context.getResponder().type();
-        item.clientAddress = context.getResponder().toClient();
-        Optional.ofNullable(context.getQuestion()).ifPresent(m -> {
-            item.type = m.getQuestion().getType();
-            item.hostname = m.getQuestion().getName().toString(false);
-        });
-        Optional.ofNullable(context.getAnswer()).ifPresent(m -> {
-            item.responseCode = m.getRcode();
-        });
-        // skip logging answers if answer logging is disabled
-        if (pintleConfig.log().database().answers()) {
-            Optional.ofNullable(context.getAnswer()).ifPresent(m -> {
-                if (m.getSection(Section.ANSWER) != null && !m.getSection(Section.ANSWER).isEmpty()) {
-                    m.getSection(Section.ANSWER).forEach(a -> {
-                        final AnswerItem answerItem = new AnswerItem();
-                        answerItem.logItem = item;
-                        answerItem.type = a.getType();
-                        answerItem.data = a.rdataToString();
-                        item.answers.add(answerItem);
+        try (final Scope outer = spanController.startAsCurrent(context)) {
+            final Span span = tracer.spanBuilder("log-to-database").startSpan();
+            try (final Scope scope = span.makeCurrent()) {
+
+                final LogItem item = new LogItem();
+                item.start = context.getStarted();
+                item.result = context.getResult();
+                item.elapsedTime = context.getElapsedMs();
+                item.service = context.getResponder().type();
+                item.clientAddress = context.getResponder().toClient();
+                Optional.ofNullable(context.getQuestion()).ifPresent(m -> {
+                    item.type = m.getQuestion().getType();
+                    item.hostname = m.getQuestion().getName().toString(false);
+                });
+                Optional.ofNullable(context.getAnswer()).ifPresent(m -> {
+                    item.responseCode = m.getRcode();
+                });
+                // skip logging answers if answer logging is disabled
+                if (pintleConfig.log().database().answers()) {
+                    Optional.ofNullable(context.getAnswer()).ifPresent(m -> {
+                        if (m.getSection(Section.ANSWER) != null && !m.getSection(Section.ANSWER).isEmpty()) {
+                            m.getSection(Section.ANSWER).stream().filter(Objects::nonNull).forEach(a -> {
+                                final AnswerItem answerItem = new AnswerItem();
+                                answerItem.logItem = item;
+                                answerItem.type = a.getType();
+                                answerItem.data = a.rdataToString();
+                                item.answers.add(answerItem);
+                            });
+                        }
                     });
                 }
-            });
+                item.persist();
+            } finally {
+                span.end();
+            }
         }
-        item.persist();
+
+        if (done(context)){
+            context.getSpan().end();
+        }
     }
-
-
 }

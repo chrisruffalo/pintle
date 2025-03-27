@@ -9,7 +9,6 @@ import io.github.chrisruffalo.pintle.resolution.ListController;
 import io.github.chrisruffalo.pintle.util.NameUtil;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Parameters;
-import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -27,13 +26,11 @@ public class ActOnContains extends AbstractAct {
     ListController listController;
 
     @Override
-    @RunOnVirtualThread
     @Transactional
-    public Optional<ActionResult> on(final String configId, Name queryName, List<ActionList> lists) {
-        if (lists.isEmpty()){
+    protected Optional<ActionResult> getResult(final String configId, Name queryName, List<ActionList> lists) {
+        if (lists.isEmpty()) {
             return Optional.empty();
         }
-
 
         final Optional<StoredLine> lineOptional = createQuery(configId, NameUtil.domains(queryName), lists).stream().findFirst();
         if (lineOptional.isEmpty()) {

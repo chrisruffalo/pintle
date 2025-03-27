@@ -22,7 +22,9 @@ public enum ResolverSourceType {
 
     CONF,
 
-    RESOLVER
+    RESOLVER,
+
+    MDNS
 
     ;
 

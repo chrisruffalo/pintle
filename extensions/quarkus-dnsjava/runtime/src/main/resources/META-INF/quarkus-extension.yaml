@@ -1,8 +1,0 @@
-name: Quarkus DNSJava
-description: Adapt DNSJava to use by Quarkus
-metadata:
-  keywords:
-    - dnsjava
-  categories:
-    - "dns"
-  status: "preview"

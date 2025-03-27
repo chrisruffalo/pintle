@@ -20,7 +20,8 @@ import java.util.stream.Collectors;
 /**
  * Wraps a DNS Resolver and gives it some ability to handle context
  * resolution directly while skipping domains it cannot resolve,
- * if needed.
+ * if needed. This is based on the non-public internals of {@link ExtendedResolver}
+ * but modified to use pintle configuration sources.
  */
 public class PintleResolver implements Resolver {
 
@@ -63,8 +64,8 @@ public class PintleResolver implements Resolver {
         /* Asynchronously sends a message. */
         private CompletionStage<Message> send(Executor executorService) {
             PintleResolver.ResolverEntry r = resolvers.get(currentResolver);
-            log.debugf(
-                    "Sending {}/{}, id={} to resolver {} ({}), attempt {} of {}",
+            log.infof(
+                    "Sending %s/%s, id=%d to resolver %s (%s), attempt %d of %d",
                     query.getQuestion().getName(),
                     Type.string(query.getQuestion().getType()),
                     query.getHeader().getID(),
@@ -86,8 +87,8 @@ public class PintleResolver implements Resolver {
         private CompletionStage<Message> handle(Message result, Throwable ex, Executor executorService) {
             AtomicInteger failureCounter = resolvers.get(currentResolver).failures;
             if (ex != null) {
-                log.debugf(
-                        "Failed to resolve {}/{}, id={} with resolver {} ({}) on attempt {} of {}, reason={}",
+                log.infof(
+                        "Failed to resolve %s/%s, id=%d with resolver %s (%s) on attempt %d of %d, reason=%s",
                         query.getQuestion().getName(),
                         Type.string(query.getQuestion().getType()),
                         query.getHeader().getID(),
@@ -124,6 +125,18 @@ public class PintleResolver implements Resolver {
                     return f;
                 }
             } else {
+                log.infof(
+                    "Resolved %s/%s, id=%d with resolver %s (%s) on attempt %d of %d",
+                    query.getQuestion().getName(),
+                    Type.string(query.getQuestion().getType()),
+                    query.getHeader().getID(),
+                    currentResolver,
+                    resolvers.get(currentResolver).resolver,
+                    attempts[currentResolver],
+                    retriesPerResolver
+                );
+                log.infof("%s", result);
+
                 failureCounter.updateAndGet(i -> i > 0 ? (int) Math.log(i) : 0);
                 return CompletableFuture.completedFuture(result);
             }

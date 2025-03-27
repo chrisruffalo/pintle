@@ -7,10 +7,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import org.xbill.DNS.Message;
 
 import java.time.ZonedDateTime;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Handles the accumulation of data throughout the process
@@ -80,6 +77,11 @@ public class QueryContext {
      * through the execution of the query.
      */
     private Span span;
+
+    /**
+     * The span that the current operations are being handled under.
+     */
+    private Span currentSpan;
 
     /**
      * The group that matched first to the query.

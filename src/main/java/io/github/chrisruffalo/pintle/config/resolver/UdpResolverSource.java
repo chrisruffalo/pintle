@@ -28,7 +28,7 @@ public class UdpResolverSource extends BaseResolverSource {
         Optional<InetSocketAddress> socketAddress = NetUtil.fromString(this.uri(), 53);
         final SimpleResolver sr = socketAddress.map(SimpleResolver::new).orElse(null);
         if (sr != null) {
-            sr.setClientFactory(new VertxDnsClient());
+            sr.setIoClientFactory(new VertxDnsClient());
         }
         return sr;
     }

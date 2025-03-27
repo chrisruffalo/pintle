@@ -12,7 +12,9 @@ import io.github.chrisruffalo.pintle.resolution.server.ListenerHolder;
 import io.github.chrisruffalo.pintle.resolution.server.TcpListenerHolder;
 import io.github.chrisruffalo.pintle.resolution.server.UdpListenerHolder;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Scope;
 import io.quarkus.vertx.ConsumeEvent;
+import io.quarkus.vertx.core.runtime.VertxMDC;
 import io.vertx.core.datagram.DatagramSocket;
 import io.vertx.core.datagram.DatagramSocketOptions;
 import io.vertx.core.net.NetServer;
@@ -61,34 +63,39 @@ public class ListenerController extends AbstractListenerController {
             logger.debugf("[TCP] connection from %s:%s", socket.remoteAddress().host(), socket.remoteAddress().port());
 
             socket.handler(buffer -> {
-                final Span span = tracer.spanBuilder("tcp").startSpan();
-                final String traceId = span.getSpanContext().getTraceId();
-                final Responder responder = new TcpResponder(socket, socket.remoteAddress().host(), socket.remoteAddress().port());
+                final Span span = tracer.spanBuilder("tcp").setAttribute("pintle.config.id", configId).setNoParent().startSpan();
+                try (Scope scope = span.makeCurrent()) {
+                    final String traceId = span.getSpanContext().getTraceId();
+                    VertxMDC.INSTANCE.put("trace", traceId);
+                    VertxMDC.INSTANCE.put("log-trace", String.format("|%s| ", traceId));
 
-                if (buffer.length() <= 2) {
-                    eventBus.send(Bus.HANDLE_ERROR, new QueryContext(traceId, responder, new IllegalStateException("a dns message cannot be less than 2 bytes")));
-                    return;
-                }
+                    final Responder responder = new TcpResponder(socket, socket.remoteAddress().host(), socket.remoteAddress().port());
 
-                final byte[] lengthBytes = buffer.getBytes(0,2);
-                final int expectedLength = ((lengthBytes[0] & 0xff) << 8) | (lengthBytes[1] & 0xff);
-                final byte[] questionBytes = buffer.getBytes(2, buffer.length());
+                    if (buffer.length() <= 2) {
+                        eventBus.send(Bus.HANDLE_ERROR, new QueryContext(traceId, responder, new IllegalStateException("a dns message cannot be less than 2 bytes")));
+                        return;
+                    }
 
-                logger.debugf("[TCP] message received from %s:%s, length: %d (expected: %d)", socket.remoteAddress().host(), socket.remoteAddress().port(), questionBytes.length, expectedLength);
+                    final byte[] lengthBytes = buffer.getBytes(0, 2);
+                    final int expectedLength = ((lengthBytes[0] & 0xff) << 8) | (lengthBytes[1] & 0xff);
+                    final byte[] questionBytes = buffer.getBytes(2, buffer.length());
 
-                try {
-                    final Message message = new Message(questionBytes);
-                    final QueryContext context = new QueryContext(traceId, span, responder, message);
-                    context.setListenerName(config.name());
-                    context.setConfigId(configId);
-                    // send event, wait for result
-                    eventBus.send(Bus.ASSIGN_CLIENT_NAME, context);
-                } catch (Exception ex) {
-                    final QueryContext context = new QueryContext(traceId, span, responder, ex);
-                    context.setListenerName(config.name());
-                    context.setConfigId(configId);
-                    // send error to be handled
-                    eventBus.send(Bus.HANDLE_ERROR, context);
+                    logger.debugf("[TCP] message received from %s:%s, length: %d (expected: %d)", socket.remoteAddress().host(), socket.remoteAddress().port(), questionBytes.length, expectedLength);
+
+                    try {
+                        final Message message = new Message(questionBytes);
+                        final QueryContext context = new QueryContext(traceId, span, responder, message);
+                        context.setListenerName(config.name());
+                        context.setConfigId(configId);
+                        // send event, wait for result
+                        eventBus.send(Bus.ASSIGN_CLIENT_NAME, context);
+                    } catch (Exception ex) {
+                        final QueryContext context = new QueryContext(traceId, span, responder, ex);
+                        context.setListenerName(config.name());
+                        context.setConfigId(configId);
+                        // send error to be handled
+                        eventBus.send(Bus.HANDLE_ERROR, context);
+                    }
                 }
             });
 
@@ -114,25 +121,28 @@ public class ListenerController extends AbstractListenerController {
                 logger.infof("[UDP] Server is listening on %s:%d", SERVER_HOST, port);
 
                 udpServer.handler(packet -> {
-                    final Span span = tracer.spanBuilder("udp").startSpan();
-                    final String traceId = span.getSpanContext().getTraceId();
+                    final Span span = tracer.spanBuilder("udp").setAttribute("pintle.config.id", configId).setNoParent().startSpan();
+                    try (Scope scope = span.makeCurrent()) {
+                        final String traceId = span.getSpanContext().getTraceId();
+                        byte[] questionBytes = packet.data().getBytes();
 
-                    byte[] questionBytes = packet.data().getBytes();
-                    logger.debugf("[UDP] message received from %s:%s, length: %d", packet.sender().host(), packet.sender().port(), questionBytes.length);
-                    final Responder responder = new UdpResponder(udpServer, packet.sender().host(), packet.sender().port());
-                    try {
-                        final Message message = new Message(questionBytes);
-                        final QueryContext context = new QueryContext(traceId, span, responder, message);
-                        context.setConfigId(configId);
-                        context.setListenerName(config.name());
-                        // send event, wait for result
-                        eventBus.send(Bus.ASSIGN_CLIENT_NAME, context);
-                    } catch (Exception ex) {
-                        final QueryContext context = new QueryContext(traceId, span, responder, ex);
-                        context.setConfigId(configId);
-                        context.setListenerName(config.name());
-                        // send error to be handled
-                        eventBus.send(Bus.HANDLE_ERROR, context);
+                        logger.debugf("[UDP] message received from %s:%s, length: %d", packet.sender().host(), packet.sender().port(), questionBytes.length);
+
+                        final Responder responder = new UdpResponder(udpServer, packet.sender().host(), packet.sender().port());
+                        try {
+                            final Message message = new Message(questionBytes);
+                            final QueryContext context = new QueryContext(traceId, span, responder, message);
+                            context.setConfigId(configId);
+                            context.setListenerName(config.name());
+                            // send event, wait for result
+                            eventBus.send(Bus.ASSIGN_CLIENT_NAME, context);
+                        } catch (Exception ex) {
+                            final QueryContext context = new QueryContext(traceId, span, responder, ex);
+                            context.setConfigId(configId);
+                            context.setListenerName(config.name());
+                            // send error to be handled
+                            eventBus.send(Bus.HANDLE_ERROR, context);
+                        }
                     }
                 });
             } else {

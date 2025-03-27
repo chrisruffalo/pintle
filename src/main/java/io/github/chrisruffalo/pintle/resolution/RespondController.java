@@ -2,8 +2,10 @@ package io.github.chrisruffalo.pintle.resolution;
 
 import io.github.chrisruffalo.pintle.event.Bus;
 import io.github.chrisruffalo.pintle.model.QueryContext;
+import io.github.chrisruffalo.pintle.telemetry.SpanController;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.instrumentation.annotations.WithSpan;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Scope;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.vertx.core.eventbus.EventBus;
@@ -15,10 +17,10 @@ import org.jboss.logging.Logger;
 import org.xbill.DNS.Flags;
 import org.xbill.DNS.Message;
 import org.xbill.DNS.Rcode;
+import org.xbill.DNS.Section;
 
 import java.net.UnknownHostException;
 import java.time.ZonedDateTime;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -31,7 +33,12 @@ public class RespondController {
     @Inject
     Logger logger;
 
-    @WithSpan("respond to client")
+    @Inject
+    Tracer tracer;
+
+    @Inject
+    SpanController spanController;
+
     @ConsumeEvent(Bus.RESPOND)
     @Retry
     @Fallback(fallbackMethod = "fallback")
@@ -40,21 +47,28 @@ public class RespondController {
         final Message question = context.getQuestion();
         Message answer = context.getAnswer();
 
-        // cover for null answers
-        if (answer == null) {
-            answer = new Message();
-            answer.getHeader().setFlag(Flags.QR);
-            if(question != null) {
-                answer.getHeader().setID(question.getHeader().getID());
-            }
-            answer.getHeader().setRcode(Rcode.NXDOMAIN);
-        }
+        try (final Scope outer = spanController.startAsCurrent(context)) {
+            final Span span = tracer.spanBuilder("respond").startSpan();
+            try (final Scope scope = span.makeCurrent()) {
 
-        return context.getResponder().respond(answer).toCompletionStage().whenComplete((voidResult, throwable) -> {
-            dissem(context);
-        }).thenRun(() -> {
-            Optional.ofNullable(context.getSpan()).ifPresent(Span::end);
-        });
+                // cover for null answers
+                if (answer == null) {
+                    answer = new Message();
+                    answer.getHeader().setFlag(Flags.QR);
+                    if (question != null) {
+                        answer.getHeader().setID(question.getHeader().getID());
+                    }
+                    answer.getHeader().setRcode(Rcode.NXDOMAIN);
+                }
+                final Message finalAnswer = answer;
+
+                return context.getResponder().respond(finalAnswer).toCompletionStage().whenComplete((voidResult, throwable) -> {
+                    context.getSpan().setAttribute("pintle.response.body", finalAnswer.sectionToString(Section.ANSWER));
+                    context.getSpan().setAttribute("pintle.response.code", Rcode.string(finalAnswer.getRcode()));
+                    dissem(context);
+                }).thenRun(span::end);
+            }
+        }
     }
 
     @ConsumeEvent(Bus.HANDLE_ERROR)
@@ -97,14 +111,13 @@ public class RespondController {
      * Send the query context out to the final destinations that
      * need it (logging, statistics, etc).
      *
-     * @param context to disseminate the final state of
+     * @param context to disseminate the final state of query
      */
     private void dissem(QueryContext context) {
         // todo: this probably should be finished and not responded
         //       because it could error out without ever sending
         //       anything back
         context.setResponded(ZonedDateTime.now());
-        // todo: should we try and close the responder and span here?
 
         // publish to all the controllers that handle the end-state
         // of the context.

@@ -10,7 +10,6 @@ import io.github.chrisruffalo.pintle.resolution.server.MdnsListenerHolder;
 import io.github.chrisruffalo.pintle.resource.serde.TypeStringSerializer;
 import io.github.chrisruffalo.pintle.util.NameUtil;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
@@ -71,9 +70,14 @@ public class MdnsController extends AbstractListenerController {
 
     public static class MdnsCacheRecord {
         private String name;
-        private String data;
+        private byte[] data;
+
+        private String dataString;
+
         private long ttl;
         private String type;
+
+        private int dclass;
 
         @JsonSerialize(using = TypeStringSerializer.class)
         private int rsetType;
@@ -86,12 +90,20 @@ public class MdnsController extends AbstractListenerController {
             this.name = name;
         }
 
-        public String getData() {
+        public byte[] getData() {
             return data;
         }
 
-        public void setData(String data) {
+        public void setData(byte[] data) {
             this.data = data;
+        }
+
+        public String getDataString() {
+            return dataString;
+        }
+
+        public void setDataString(String dataString) {
+            this.dataString = dataString;
         }
 
         public long getTtl() {
@@ -116,6 +128,14 @@ public class MdnsController extends AbstractListenerController {
 
         public void setRsetType(int rsetType) {
             this.rsetType = rsetType;
+        }
+
+        public int getDclass() {
+            return dclass;
+        }
+
+        public void setDclass(int dclass) {
+            this.dclass = dclass;
         }
     }
 
@@ -168,7 +188,6 @@ public class MdnsController extends AbstractListenerController {
         return stage.toCompletionStage();
     }
 
-    @WithSpan("configure mdns")
     @ConsumeEvent(value = Bus.CONFIG_UPDATE_MDNS, ordered = true)
     public void configure(ConfigUpdate event) {
         config = configProducer.get(event.getId());
@@ -211,9 +230,9 @@ public class MdnsController extends AbstractListenerController {
     private ListenerHolder<DatagramSocket> startMdnsUdpServer(final String mdnsInterface, final String address) {
         final DatagramSocketOptions options = new DatagramSocketOptions()
             .setMulticastNetworkInterface(mdnsInterface)
-            .setBroadcast(true)
             .setReuseAddress(true)
             ;
+
         final DatagramSocket mdnsServer = vertx.createDatagramSocket(options);
         mdnsServer.listen(MDNS_PORT, address, asyncResult -> {
             if (asyncResult.succeeded()) {
@@ -242,7 +261,6 @@ public class MdnsController extends AbstractListenerController {
         return new MdnsListenerHolder("mdns-" + mdnsInterface, mdnsServer, address);
     }
 
-    @WithSpan("store mdns")
     @ConsumeEvent(Bus.STORE_MDNS)
     @RunOnVirtualThread
     public void store(QueryContext context) {
@@ -275,15 +293,44 @@ public class MdnsController extends AbstractListenerController {
     private MdnsCacheRecord translate(Record r) {
         final MdnsCacheRecord cacheRecord = new MdnsCacheRecord();
         cacheRecord.name = NameUtil.string(r.getName());
-        cacheRecord.data = r.rdataToString();
+        cacheRecord.data = r.rdataToWireCanonical();
+        cacheRecord.dataString = r.rdataToString();
         cacheRecord.rsetType = r.getRRsetType();
         cacheRecord.ttl = r.getTTL();
         cacheRecord.type = Type.string(r.getType());
+        cacheRecord.dclass = r.getDClass();
         return cacheRecord;
     }
 
     public Map<String, Map<String, MdnsCacheRecord>> get() {
         return Collections.unmodifiableMap(RECORDS);
+    }
+
+    public Optional<Message> query(final Message question) {
+        final String domain = NameUtil.string(question.getQuestion().getName());
+        final Name domainName = NameUtil.parse(domain).orElse(null);
+        if (domain.isEmpty() || domainName == null) {
+            return Optional.empty();
+        }
+        final String type = Type.string(question.getQuestion().getType());
+        final Map<String, MdnsCacheRecord> typeRecords = RECORDS.get(type);
+        if (typeRecords != null) {
+            final MdnsCacheRecord cacheRecord = typeRecords.get(domain);
+            if(cacheRecord != null) {
+                final Message response = new Message(question.getHeader().getID());
+                response.getHeader().setFlag(Flags.QR);
+                final Record r = Record.newRecord(
+                    domainName,
+                    Type.value(cacheRecord.type),
+                    cacheRecord.dclass > DClass.ANY ? DClass.IN : cacheRecord.dclass,
+                    cacheRecord.ttl,
+                    cacheRecord.data
+                );
+                response.addRecord(r, Section.ANSWER);
+                return Optional.of(response);
+            }
+        }
+        return Optional.empty();
     }
 
     public void clear() {

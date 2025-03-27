@@ -54,10 +54,7 @@ TODO: get actual installation procedures, quarkus-app, uber-jar, native, deb, rp
 ### Requirements
 - JDK 21 (I use mandrel 23.1.r21)
 - Maven 3.8.6 (required by Quarkus 3.4.2)
-
-### Extensions
-You will need to build and install the extensions in the ./extensions folder first. To
-do this simply change directories into each and run `mvn clean install`.
+- DNSJAVA 3.6.0-SNAPSHOT (built and installed to local maven from github)
 
 ### Running in Developer Mode
 ```shell

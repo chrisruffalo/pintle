@@ -7,7 +7,6 @@ import io.github.chrisruffalo.pintle.config.producer.ConfigProducer;
 import io.github.chrisruffalo.pintle.event.Bus;
 import io.github.chrisruffalo.pintle.event.ConfigUpdate;
 import io.github.chrisruffalo.pintle.model.QueryContext;
-import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.vertx.core.eventbus.EventBus;
@@ -59,7 +58,6 @@ public class GroupController {
 
     }
 
-    @WithSpan("assign to group")
     @ConsumeEvent(Bus.ASSIGN_GROUP)
     @RunOnVirtualThread
     public void assignToGroup(QueryContext context) {

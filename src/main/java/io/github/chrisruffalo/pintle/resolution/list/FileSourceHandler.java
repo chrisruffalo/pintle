@@ -9,7 +9,6 @@ import io.github.chrisruffalo.pintle.util.DownloadUtil;
 import io.github.chrisruffalo.pintle.util.PathUtil;
 import io.github.chrisruffalo.pintle.util.ShaUtil;
 import io.quarkus.panache.common.Parameters;
-import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -41,7 +40,6 @@ public abstract class FileSourceHandler implements SourceHandler {
 
     @Override
     @Transactional
-    @RunOnVirtualThread
     public Optional<StoredSource> load(long listId, PintleConfig pintleConfig, ActionList config, String source) {
         if (config == null) {
             return Optional.empty();

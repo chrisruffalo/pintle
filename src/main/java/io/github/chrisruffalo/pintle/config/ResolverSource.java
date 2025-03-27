@@ -28,6 +28,7 @@ import org.xbill.DNS.Resolver;
     @JsonSubTypes.Type(value = ResolvConfResolverSource.class, name = "conf", names = {"conf", "resolv.conf"}),
     @JsonSubTypes.Type(value = HostfileResolverSource.class, name = "hostfile", names = {"hostfile", "hosts"}),
     @JsonSubTypes.Type(value = HostfileResolverSource.class, name = "zone", names = {"zone", "zonefile", "bind"}),
+    @JsonSubTypes.Type(value = MdnsResolverSource.class, name = "mdns")
 })
 @JsonIgnoreProperties(ignoreUnknown = true)
 @WithConverter(ResolverSourceConverter.class)

@@ -9,18 +9,16 @@ import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetSocket;
 import org.jboss.logging.Logger;
 import org.xbill.DNS.Message;
-import org.xbill.DNS.ResolverClientFactory;
-import org.xbill.DNS.TcpResolverClient;
-import org.xbill.DNS.UdpResolverClient;
+import org.xbill.DNS.io.IoClientFactory;
+import org.xbill.DNS.io.TcpIoClient;
+import org.xbill.DNS.io.UdpIoClient;
 
-import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
-public class VertxDnsClient implements TcpResolverClient, UdpResolverClient, ResolverClientFactory {
+public class VertxDnsClient implements TcpIoClient, UdpIoClient, IoClientFactory {
 
     private static final int EPHEMERAL_RANGE_START = 1024;
     private static final int EPHEMERAL_RANGE_END = EPHEMERAL_RANGE_START + 1024;
@@ -28,12 +26,12 @@ public class VertxDnsClient implements TcpResolverClient, UdpResolverClient, Res
     private final Logger logger = Logger.getLogger(this.getClass());
 
     @Override
-    public TcpResolverClient createOrGetTcpClient() {
+    public TcpIoClient createOrGetTcpClient() {
         return this;
     }
 
     @Override
-    public UdpResolverClient createOrGetUdpClient() {
+    public UdpIoClient createOrGetUdpClient() {
         return this;
     }
 
