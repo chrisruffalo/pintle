@@ -5,9 +5,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.github.chrisruffalo.pintle.config.diff.Diffable;
 import io.github.chrisruffalo.pintle.config.matcher.*;
-import io.github.chrisruffalo.pintle.config.serde.MatcherConverter;
 import io.github.chrisruffalo.pintle.model.QueryContext;
-import io.smallrye.config.WithConverter;
 
 /**
  * A matcher provides configuration for the
@@ -25,7 +23,6 @@ import io.smallrye.config.WithConverter;
     @JsonSubTypes.Type(value = HostnameMatcher.class, name = "hostname")
 })
 @JsonIgnoreProperties(ignoreUnknown = true)
-@WithConverter(MatcherConverter.class)
 public interface Matcher extends Diffable<Matcher> {
 
     /**

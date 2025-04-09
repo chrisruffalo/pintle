@@ -35,7 +35,7 @@ public class ResolverSourceFactory {
         final URI uri = uriOptional.get();
 
         String scheme = uri.getScheme();
-        final String host = uri.getHost();
+        final String host = Optional.ofNullable(uri.getHost()).orElse(uriString);
         int port = uri.getPort();
 
         if (port < 1) {
@@ -57,6 +57,7 @@ public class ResolverSourceFactory {
             if (ipOptional.isPresent()) {
                 final UdpResolverSource udpResolverSource = new UdpResolverSource();
                 udpResolverSource.setUri(uriString);
+                return udpResolverSource;
             }
 
             final Optional<Path> pathOptional = PathUtil.find(PathUtil.real(uriString));
@@ -119,7 +120,7 @@ public class ResolverSourceFactory {
         }
 
 
-        return null;
+        return source;
     }
 
 

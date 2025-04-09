@@ -17,7 +17,7 @@ pintle:
     - name: google
       sources:
         - uri: 8.8.8.8
-        - uri: 8.8.4.4
+        - 8.8.4.4
   groups:
     - name: default
       lists:
