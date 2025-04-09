@@ -45,6 +45,10 @@ public class ResolverHandler {
             if (resolver == null) {
                 continue;
             }
+            if (resolver.getResolvers().length < 1) {
+                logger.infof("skipping resolver %s, no configured resolvers", resolver.config().name());
+                continue;
+            }
             resolverMap.put(resolverConfig.name(), resolver);
         }
     }

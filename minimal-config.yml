@@ -23,4 +23,4 @@ pintle:
       lists:
         - basic-blocking
       resolvers:
-        - google-udp
+        - google

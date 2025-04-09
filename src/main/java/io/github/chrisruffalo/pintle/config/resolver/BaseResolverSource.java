@@ -41,7 +41,6 @@ public abstract class BaseResolverSource implements ResolverSource {
     @JsonIgnore
     protected abstract Resolver construct(PintleConfig config, io.github.chrisruffalo.pintle.config.Resolver resolverConfig);
 
-    @Override
     public Resolver resolver(PintleConfig config, io.github.chrisruffalo.pintle.config.Resolver resolverConfig) {
         final Resolver r = resolverAtomicReference.compareAndExchange(null, construct(config, resolverConfig));
         if (r == null) {

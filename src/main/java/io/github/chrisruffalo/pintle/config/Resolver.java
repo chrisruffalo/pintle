@@ -3,12 +3,15 @@ package io.github.chrisruffalo.pintle.config;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.chrisruffalo.pintle.config.diff.Diff;
 import io.github.chrisruffalo.pintle.config.diff.Diffable;
-import io.github.chrisruffalo.pintle.config.serde.ResolverSourceConverter;
+import io.github.chrisruffalo.pintle.config.serde.ResolverSourceListConverter;
 import io.github.chrisruffalo.pintle.resolution.resolver.PintleResolver;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * A resolver represents a collection of one or more
@@ -40,7 +43,7 @@ public interface Resolver extends Named, Diffable<Resolver> {
      * @return the list of sources if available, empty if not
      */
     @WithDefault("")
-    @WithConverter(ResolverSourceConverter.class)
+    @WithConverter(ResolverSourceListConverter.class)
     Optional<List<ResolverSource>> sources();
 
     /**
@@ -63,7 +66,6 @@ public interface Resolver extends Named, Diffable<Resolver> {
      */
     @JsonIgnore
     default PintleResolver resolver(final PintleConfig config) {
-        final List<org.xbill.DNS.Resolver> resolvers = new LinkedList<>();
         return new PintleResolver(config, this);
     }
 

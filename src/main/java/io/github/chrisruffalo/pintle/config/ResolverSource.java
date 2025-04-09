@@ -6,8 +6,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.github.chrisruffalo.pintle.config.diff.Diffable;
 import io.github.chrisruffalo.pintle.config.resolver.*;
-import io.github.chrisruffalo.pintle.config.serde.ResolverSourceConverter;
-import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import org.xbill.DNS.Resolver;
 
@@ -31,7 +29,6 @@ import org.xbill.DNS.Resolver;
     @JsonSubTypes.Type(value = MdnsResolverSource.class, name = "mdns")
 })
 @JsonIgnoreProperties(ignoreUnknown = true)
-@WithConverter(ResolverSourceConverter.class)
 public interface ResolverSource extends Diffable<ResolverSource>, Comparable<ResolverSource> {
 
     /**
@@ -51,7 +48,7 @@ public interface ResolverSource extends Diffable<ResolverSource>, Comparable<Res
     ResolverSourceType type();
 
     /**
-     * Consturcts the resolver object that will be able
+     * Constructs the resolver object that will be able
      * to make the connection/lookup.
      *
      * @param config root config
@@ -61,7 +58,7 @@ public interface ResolverSource extends Diffable<ResolverSource>, Comparable<Res
     @JsonIgnore
     default Resolver resolver(final PintleConfig config, final io.github.chrisruffalo.pintle.config.Resolver resolverConfig) {
         return null;
-    };
+    }
 
 
     @Override

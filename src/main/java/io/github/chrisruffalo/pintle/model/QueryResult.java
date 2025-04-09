@@ -1,8 +1,11 @@
 package io.github.chrisruffalo.pintle.model;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
 /**
  * The overall outcome of a query.
  */
+@RegisterForReflection
 public enum QueryResult {
 
     /**

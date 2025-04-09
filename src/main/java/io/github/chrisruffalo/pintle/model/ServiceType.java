@@ -1,9 +1,12 @@
 package io.github.chrisruffalo.pintle.model;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
 /**
  * What type of listener was used
  * to receive the query
  */
+@RegisterForReflection
 public enum ServiceType {
 
     /**

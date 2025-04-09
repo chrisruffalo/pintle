@@ -134,6 +134,8 @@ public class QueryController {
                         if (each.isEmpty()) {
                             logger.debugf("the group '%s' did not have any resolvers than can service the domain '%s', skipping", group.name(), NameUtil.string(queryName));
                             continue;
+                        } else {
+                            logger.debugf("the group has %d resolvers that can service the domain %s", each.size(), queryName);
                         }
 
                         // loop until we get an answer or an error

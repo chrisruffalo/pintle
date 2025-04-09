@@ -40,7 +40,7 @@ public class DownloadUtil {
         options.addHeader("Accept-Encoding", "gzip");
         options.addHeader("Dnt", "1");
         WebClientOptions webClientOptions = new WebClientOptions();
-        webClientOptions.setTryUseCompression(true);
+        webClientOptions.setDecompressionSupported(true);
         webClientOptions.setFollowRedirects(true);
 
         final WebClient webClient = WebClient.wrap(client, webClientOptions);

@@ -10,6 +10,7 @@ import io.github.chrisruffalo.pintle.resolution.server.MdnsListenerHolder;
 import io.github.chrisruffalo.pintle.resource.serde.TypeStringSerializer;
 import io.github.chrisruffalo.pintle.util.NameUtil;
 import io.opentelemetry.api.trace.Span;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
@@ -68,6 +69,7 @@ public class MdnsController extends AbstractListenerController {
         return logger;
     }
 
+    @RegisterForReflection
     public static class MdnsCacheRecord {
         private String name;
         private byte[] data;
@@ -303,7 +305,9 @@ public class MdnsController extends AbstractListenerController {
     }
 
     public Map<String, Map<String, MdnsCacheRecord>> get() {
-        return Collections.unmodifiableMap(RECORDS);
+        final Map<String, Map<String, MdnsCacheRecord>> mapMap = new HashMap<>(RECORDS);
+        mapMap.forEach((key, innerMap) -> mapMap.replace(key, new HashMap<>(innerMap)));
+        return mapMap;
     }
 
     public Optional<Message> query(final Message question) {

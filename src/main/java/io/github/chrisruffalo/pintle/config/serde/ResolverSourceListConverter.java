@@ -37,7 +37,7 @@ import java.util.List;
  * </pre>
 
  */
-public class ResolverSourceConverter implements Converter<List<ResolverSource>> {
+public class ResolverSourceListConverter implements Converter<List<ResolverSource>> {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
