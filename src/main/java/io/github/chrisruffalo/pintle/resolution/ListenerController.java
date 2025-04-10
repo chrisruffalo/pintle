@@ -124,6 +124,8 @@ public class ListenerController extends AbstractListenerController {
                     final Span span = tracer.spanBuilder("udp").setAttribute("pintle.config.id", configId).setNoParent().startSpan();
                     try (Scope scope = span.makeCurrent()) {
                         final String traceId = span.getSpanContext().getTraceId();
+                        VertxMDC.INSTANCE.put("trace", traceId);
+                        VertxMDC.INSTANCE.put("log-trace", String.format("|%s| ", traceId));
                         byte[] questionBytes = packet.data().getBytes();
 
                         logger.debugf("[UDP] message received from %s:%s, length: %d", packet.sender().host(), packet.sender().port(), questionBytes.length);

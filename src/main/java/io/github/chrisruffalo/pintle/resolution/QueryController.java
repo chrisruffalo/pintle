@@ -12,6 +12,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.quarkus.vertx.ConsumeEvent;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.vertx.core.eventbus.EventBus;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -91,6 +92,7 @@ public class QueryController {
     }
 
     @ConsumeEvent(Bus.QUERY)
+    @RunOnVirtualThread
     public CompletionStage<Message> resolve(QueryContext context) {
         try (final Scope outer = spanController.startAsCurrent(context)) {
             final Span span = tracer.spanBuilder("query").startSpan();
@@ -165,6 +167,8 @@ public class QueryController {
                             context.setResult(QueryResult.RESOLVED);
                             context.setAnswer(answer);
                             eventBus.send(Bus.RESPOND, context);
+                            span.end();
+                            return CompletableFuture.completedFuture(answer);
                         }
                     }
                 }

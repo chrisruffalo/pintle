@@ -20,12 +20,10 @@ import java.util.Objects;
 public class Question extends PanacheEntityBase {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    public Long id;
-
     @JsonSerialize(using = TypeStringSerializer.class)
     public int type;
 
+    @Id
     public String hostname;
 
     @JsonProperty("total-milliseconds")

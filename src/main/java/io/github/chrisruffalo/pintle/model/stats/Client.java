@@ -18,9 +18,6 @@ import java.util.Objects;
 public class Client extends PanacheEntityBase {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    public Long id;
-
     public String address;
 
     @Column(name = "query_count")

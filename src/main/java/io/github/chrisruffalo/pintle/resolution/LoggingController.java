@@ -10,26 +10,31 @@ import io.github.chrisruffalo.pintle.model.log.LogItem;
 import io.github.chrisruffalo.pintle.telemetry.SpanController;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.runtime.StartupEvent;
+import io.quarkus.scheduler.Scheduled;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import jakarta.transaction.UserTransaction;
+import org.hibernate.StatelessSession;
 import org.jboss.logging.Logger;
 import org.xbill.DNS.Message;
 import org.xbill.DNS.Section;
 import org.xbill.DNS.Type;
 
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @ApplicationScoped
 public class LoggingController extends PostRespondController {
+
+    @Inject
+    @PersistenceUnit("log-db")
+    StatelessSession statelessSession;
 
     @Inject
     ConfigProducer configProducer;
@@ -40,13 +45,12 @@ public class LoggingController extends PostRespondController {
     Logger logger;
 
     @Inject
-    UserTransaction transaction;
-
-    @Inject
     Tracer tracer;
 
     @Inject
     SpanController spanController;
+
+    Queue<LogItem> logItemQueue = new ConcurrentLinkedQueue<>();
 
     public void init(@Observes StartupEvent start){
         // has 2 post-query events
@@ -98,9 +102,8 @@ public class LoggingController extends PostRespondController {
     }
 
     @ConsumeEvent(Bus.QUERY_DONE)
-    @Transactional
     @RunOnVirtualThread
-    public void logToDatabase(QueryContext context) {
+    public void logToDatabaseCollector(QueryContext context) {
         // quick return if not enabled
         if (pintleConfig == null || !pintleConfig.log().enabled() || !pintleConfig.log().database().enabled()) {
             if (done(context)){
@@ -140,7 +143,7 @@ public class LoggingController extends PostRespondController {
                         }
                     });
                 }
-                item.persist();
+                logItemQueue.add(item);
             } finally {
                 span.end();
             }
@@ -149,5 +152,31 @@ public class LoggingController extends PostRespondController {
         if (done(context)){
             context.getSpan().end();
         }
+    }
+
+    <T> List<T> drain(Queue<T> source) {
+        final List<T> output = new LinkedList<>();
+        while (!source.isEmpty()) {
+            output.add(source.remove());
+        }
+        return output;
+    }
+
+    @Transactional
+    @Scheduled(every = "1s", concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
+    void flushLogs() {
+        if (logItemQueue.isEmpty()) {
+            return;
+        }
+
+        List<LogItem> toSave = drain(logItemQueue);
+
+        long flushed = 0;
+        for(LogItem toFlush : toSave) {
+            statelessSession.insert(toFlush);
+            flushed++;
+        }
+
+        logger.tracef("flushed %d log items", flushed);
     }
 }

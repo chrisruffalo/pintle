@@ -1,6 +1,7 @@
 package io.github.chrisruffalo.pintle.resolution.resolver;
 
 import io.github.chrisruffalo.pintle.config.PintleConfig;
+import io.github.chrisruffalo.pintle.config.ResolverSource;
 import io.github.chrisruffalo.pintle.util.NameUtil;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import org.jboss.logging.Logger;
@@ -65,11 +66,13 @@ public class PintleResolver implements Resolver {
         private CompletionStage<Message> send(Executor executorService) {
             PintleResolver.ResolverEntry r = resolvers.get(currentResolver);
             log.infof(
-                    "Sending %s/%s, id=%d to resolver %s (%s), attempt %d of %d",
+                    "sending %s/%s, id=%d to resolver %s[%d]-%s (%s), attempt %d of %d",
                     query.getQuestion().getName(),
                     Type.string(query.getQuestion().getType()),
                     query.getHeader().getID(),
+                    r.name,
                     currentResolver,
+                    r.source.type().name(),
                     r.resolver,
                     attempts[currentResolver] + 1,
                     retriesPerResolver);
@@ -126,16 +129,17 @@ public class PintleResolver implements Resolver {
                 }
             } else {
                 log.infof(
-                    "Resolved %s/%s, id=%d with resolver %s (%s) on attempt %d of %d",
+                    "resolved %s/%s, id=%d with resolver %s[%d] (%s) on attempt %d of %d",
                     query.getQuestion().getName(),
                     Type.string(query.getQuestion().getType()),
                     query.getHeader().getID(),
+                    resolvers.get(currentResolver).name,
                     currentResolver,
                     resolvers.get(currentResolver).resolver,
                     attempts[currentResolver],
                     retriesPerResolver
                 );
-                log.infof("%s", result);
+                log.tracef("%s", result);
 
                 failureCounter.updateAndGet(i -> i > 0 ? (int) Math.log(i) : 0);
                 return CompletableFuture.completedFuture(result);
@@ -144,10 +148,18 @@ public class PintleResolver implements Resolver {
     }
 
     private static class ResolverEntry {
+
+        private final String name;
+
         private final Resolver resolver;
+
+        private final ResolverSource source;
+
         private final AtomicInteger failures;
 
-        ResolverEntry(Resolver r) {
+        ResolverEntry(Resolver r, String name, ResolverSource source) {
+            this.name = name;
+            this.source = source;
             this.resolver = r;
             this.failures = new AtomicInteger(0);
         }
@@ -192,7 +204,10 @@ public class PintleResolver implements Resolver {
         this.resolverConfig = resolverConfig;
         resolverConfig.sources().ifPresent(list -> {
             resolvers.clear();
-            resolvers.addAll(list.stream().filter(Objects::nonNull).map(rs -> rs.resolver(config, resolverConfig)).filter(Objects::nonNull).map(ResolverEntry::new).toList());
+            resolvers.addAll(list.stream().filter(Objects::nonNull).map(rs -> {
+                final Resolver resolver = rs.resolver(config, resolverConfig);
+                return resolver != null ? new ResolverEntry(resolver, resolverConfig.name(), rs) : null;
+            }).filter(Objects::nonNull).toList());
         });
         // go through all resolvers by default
         this.retries = resolvers.size();
@@ -294,16 +309,6 @@ public class PintleResolver implements Resolver {
     /** Returns all resolvers used by this PintleResolver */
     public Resolver[] getResolvers() {
         return resolvers.stream().map(re -> re.resolver).toArray(Resolver[]::new);
-    }
-
-    /** Adds a new resolver to be used by this PintleResolver */
-    public void addResolver(Resolver r) {
-        resolvers.add(new PintleResolver.ResolverEntry(r));
-    }
-
-    /** Deletes a resolver used by this PintleResolver */
-    public void deleteResolver(Resolver r) {
-        resolvers.removeIf(re -> re.resolver == r);
     }
 
     /**

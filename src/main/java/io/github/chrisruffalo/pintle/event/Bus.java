@@ -68,5 +68,12 @@ public class Bus {
     public static final String CONFIG_LIST_PROCESS_SOURCE = "pintle-config-process-source";
     public static final String CONFIG_UPDATE_RESOLVERS = "pintle-config-update-resolvers";
     public static final String CONFIG_SINGLE_LIST_COMPLETE = "pintle-config-complete-single-list";
+
+    /**
+     * retries after failed log/update
+     */
+    public static final String ERROR_RELOG = "pintle-log-re-persist";
+    public static final String ERROR_REUPDATE_CLIENT_STATS = "pintle-stats-re-update-client";
+    public static final String ERROR_REUPDATE_QUESTION_STATS = "pintle-stats-re-update-question";
 }
 

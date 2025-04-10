@@ -28,6 +28,9 @@ public class UdpResolverSource extends BaseResolverSource {
         Optional<InetSocketAddress> socketAddress = NetUtil.fromString(this.uri(), 53);
         final SimpleResolver sr = socketAddress.map(SimpleResolver::new).orElse(null);
         if (sr != null) {
+            // something is wrong with the VertxDnsClient and it isn't working as expected, the question
+            // is apparently sent but no response ever is forwarded to the rest of the system or never
+            // returns in the first place
             sr.setIoClientFactory(new VertxDnsClient());
         }
         return sr;

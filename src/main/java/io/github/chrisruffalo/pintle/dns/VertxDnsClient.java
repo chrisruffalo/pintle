@@ -7,6 +7,7 @@ import io.vertx.core.datagram.DatagramSocketOptions;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetSocket;
+import jakarta.enterprise.inject.spi.CDI;
 import org.jboss.logging.Logger;
 import org.xbill.DNS.Message;
 import org.xbill.DNS.io.IoClientFactory;
@@ -45,8 +46,9 @@ public class VertxDnsClient implements TcpIoClient, UdpIoClient, IoClientFactory
 
     @Override
     public CompletableFuture<byte[]> sendAndReceiveTcp(InetSocketAddress localAddress, InetSocketAddress remoteAddress, Message message, byte[] bytes, Duration duration) {
-        final Vertx vertx = Vertx.currentContext().owner();
+        final Vertx vertx = CDI.current().select(Vertx.class).get();
         final NetClientOptions options = createOptions();
+        options.setConnectTimeout((int)duration.toMillis());
 
         final NetClient client = vertx.createNetClient(options);
 
@@ -78,22 +80,24 @@ public class VertxDnsClient implements TcpIoClient, UdpIoClient, IoClientFactory
                 output.appendByte((byte) (bytes.length & 0xFF));
                 output.appendBytes(bytes);
 
-                // Write data to the server
-                socket.write(output);
+                // write data to the server
+                socket.write(output, done -> {
+                    if (done.succeeded()){
+                        logger.tracef("sent %d bytes to server", output.length());
+                    } else {
+                        if (done.cause() != null) {
+                            logger.tracef("failed while sending bytes to server: %s", done.cause());
+                        } else {
+                            logger.tracef("failed while sending bytes to server");
+                        }
+                    }
+                });
             } else {
                 resultFuture.completeExceptionally(res.cause());
             }
         });
 
-        // Set a timeout for the future
-        vertx.setTimer(duration.toMillis(), timerId -> {
-            client.close();
-            resultFuture.completeExceptionally(new TimeoutException("Timeout exceeded"));
-        });
-
-        return resultFuture.thenApply(responseBytes -> {
-            return responseBytes;
-        });
+        return resultFuture.thenApply(responseBytes -> responseBytes);
     }
 
     private CompletableFuture<byte[]> listenAndSend(DatagramSocket client, int port, InetSocketAddress localAddress, InetSocketAddress remoteAddress, Message message, byte[] bytes, int i, Duration duration) {
@@ -149,11 +153,11 @@ public class VertxDnsClient implements TcpIoClient, UdpIoClient, IoClientFactory
         logger.debugf("sending udp request");
 
         final DatagramSocketOptions options = new DatagramSocketOptions();
-        final DatagramSocket client = Vertx.currentContext().owner().createDatagramSocket(options);
+        final Vertx vertx = CDI.current().select(Vertx.class).get();
+        final DatagramSocket client = vertx.createDatagramSocket(options);
 
         final CompletableFuture<byte[]> completableFuture = listenAndSend(client, EPHEMERAL_RANGE_START, localAddress, remoteAddress, message, bytes, i, duration);
 
-        final Vertx vertx = Vertx.currentContext().owner();
         // Set a timeout for the future
         vertx.setTimer(duration.toMillis(), timerId -> {
             client.close();
